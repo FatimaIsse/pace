@@ -1,0 +1,130 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-canvas: #f7f8f5;
+  --color-surface: #ffffff;
+  --color-primary: #48695a;
+  --color-primary-hover: #395447;
+  --color-sage-soft: #e8f0eb;
+  --color-accent: #e8a96b;
+  --color-ink: #1f2923;
+  --color-ink-soft: #68726c;
+  --color-ink-faint: #919a94;
+  --color-border: #e3e8e4;
+  --color-soft: #f1f4f1;
+  --color-success: #527a60;
+  --color-warning: #b27a45;
+  --color-error: #a95c5c;
+
+  --font-sans: 'Manrope', 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 1rem;
+  --radius-button: 0.75rem;
+
+  --shadow-card: 0 2px 10px rgba(31, 41, 35, 0.04);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --color-canvas: #141815;
+    --color-surface: #1c211d;
+    --color-primary: #7ba98d;
+    --color-primary-hover: #8fbc9f;
+    --color-sage-soft: #24352b;
+    --color-accent: #eab577;
+    --color-ink: #eef1ee;
+    --color-ink-soft: #a3ada6;
+    --color-ink-faint: #6e786f;
+    --color-border: #2c332d;
+    --color-soft: #232a24;
+    --color-success: #6fa47f;
+    --color-warning: #d99a5f;
+    --color-error: #d17d7d;
+    --shadow-card: 0 2px 10px rgba(0, 0, 0, 0.3);
+  }
+}
+
+:root[data-theme='dark'] {
+  --color-canvas: #141815;
+  --color-surface: #1c211d;
+  --color-primary: #7ba98d;
+  --color-primary-hover: #8fbc9f;
+  --color-sage-soft: #24352b;
+  --color-accent: #eab577;
+  --color-ink: #eef1ee;
+  --color-ink-soft: #a3ada6;
+  --color-ink-faint: #6e786f;
+  --color-border: #2c332d;
+  --color-soft: #232a24;
+  --color-success: #6fa47f;
+  --color-warning: #d99a5f;
+  --color-error: #d17d7d;
+  --shadow-card: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    transition: background-color 200ms ease-out, color 200ms ease-out;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+
+@keyframes card-in {
+  from {
+    transform: translateY(6px);
+    opacity: 0;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 200ms ease-out;
+}
+
+.animate-sheet-in {
+  animation: sheet-in 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-card-in {
+  animation: card-in 200ms ease-out;
+}

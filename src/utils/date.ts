@@ -1,0 +1,28 @@
+import { format, isToday as isDateToday, parseISO, startOfWeek } from 'date-fns'
+
+export function todayISO(): string {
+  return format(new Date(), 'yyyy-MM-dd')
+}
+
+export function currentMonthKey(): string {
+  return format(new Date(), 'yyyy-MM')
+}
+
+export function currentWeekKey(): string {
+  return format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd')
+}
+
+export function isToday(iso: string): boolean {
+  return isDateToday(parseISO(iso))
+}
+
+export function friendlyGreeting(): string {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Good morning'
+  if (hour < 18) return 'Good afternoon'
+  return 'Good evening'
+}
+
+export function formatMonthLabel(monthKey: string): string {
+  return format(parseISO(`${monthKey}-01`), 'MMMM')
+}
