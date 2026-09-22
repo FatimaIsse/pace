@@ -83,8 +83,11 @@ export async function createUserProfile(profile: UserProfile) {
   await setDoc(doc(db, 'users', profile.uid), profile)
 }
 
+// setDoc(merge:true) rather than updateDoc — updateDoc throws NOT_FOUND if
+// the profile document doesn't exist yet (which has happened for real
+// accounts), while merge quietly creates it instead of hard-failing.
 export async function patchUserProfile(uid: string, data: Partial<UserProfile>) {
-  await updateDoc(doc(db, 'users', uid), data)
+  await setDoc(doc(db, 'users', uid), data, { merge: true })
 }
 
 // The collections that count as "this account actually has stuff in it" —
@@ -134,4 +137,19 @@ export async function deleteAllUserData(uid: string) {
   }
   batch.delete(doc(db, 'users', uid))
   await batch.commit()
+}
+
+// A plain JSON snapshot of everything under users/{uid} — the profile doc
+// plus every subcollection — for the "Export data" action.
+export async function exportAllUserData(uid: string): Promise<Record<string, unknown>> {
+  const profileSnap = await getDoc(doc(db, 'users', uid))
+  const data: Record<string, unknown> = {
+    profile: profileSnap.exists() ? profileSnap.data() : null,
+  }
+  for (const name of USER_SUBCOLLECTIONS) {
+    if (name === 'preferences') continue
+    const snap = await getDocs(userCollection(uid, name))
+    data[name] = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+  }
+  return data
 }

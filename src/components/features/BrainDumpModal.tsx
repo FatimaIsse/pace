@@ -11,7 +11,7 @@ import { useHabits } from '@/hooks/useHabits'
 import { withTimeout } from '@/utils/promise'
 import type { BrainDumpItem } from '@/types'
 
-const CREATE_TIMEOUT_MS = 5000
+const CREATE_TIMEOUT_MS = 10000
 
 const TYPE_LABELS: Record<string, [singular: string, plural: string]> = {
   task: ['task', 'tasks'],

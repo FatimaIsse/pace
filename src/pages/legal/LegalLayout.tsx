@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 
 export function LegalLayout({
   title,
@@ -10,11 +10,16 @@ export function LegalLayout({
   updated: string
   children: ReactNode
 }) {
+  const navigate = useNavigate()
+
   return (
     <div className="mx-auto flex min-h-svh max-w-[640px] flex-col gap-6 px-5 py-10 sm:px-6">
-      <Link to="/" className="text-sm font-medium text-ink-faint hover:text-ink-soft">
-        ← Back to Pace
-      </Link>
+      <button
+        onClick={() => navigate(-1)}
+        className="self-start text-sm font-medium text-ink-faint hover:text-ink-soft"
+      >
+        ← Back
+      </button>
       <div>
         <h1 className="text-[28px] font-bold text-ink sm:text-[32px]">{title}</h1>
         <p className="mt-1 text-sm text-ink-faint">Last updated {updated}</p>

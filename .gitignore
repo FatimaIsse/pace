@@ -13,6 +13,9 @@ dist-ssr
 dev-dist
 *.local
 
+# Firebase CLI local deploy cache
+.firebase
+
 # Firebase secrets
 .env
 .env.*

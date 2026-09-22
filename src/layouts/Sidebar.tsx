@@ -4,6 +4,7 @@ import { NAV_ITEMS } from './nav-items'
 import { useUI } from '@/context/UIContext'
 import { cn } from '@/utils/cn'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import { MoodSoundPicker } from '@/components/ui/MoodSoundPicker'
 import logo from '@/assets/logo.png'
 
 export function Sidebar() {
@@ -16,7 +17,10 @@ export function Sidebar() {
           <img src={logo} alt="" className="h-7 w-7" />
           <span className="text-[17px] font-semibold text-ink">Pace</span>
         </div>
-        <ThemeToggle />
+        <div className="flex items-center gap-1">
+          <MoodSoundPicker align="left" />
+          <ThemeToggle />
+        </div>
       </div>
 
       <nav className="flex flex-col gap-1">

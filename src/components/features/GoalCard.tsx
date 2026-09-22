@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { format, parseISO } from 'date-fns'
-import { Check, Pencil, Plus, Trash2, X } from 'lucide-react'
+import { Check, ChevronDown, ChevronUp, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { STATUS_LABEL } from '@/components/ui/ProgressBar'
 import { cn } from '@/utils/cn'
 import type { Goal, ProjectStatus } from '@/types'
+
+const MILESTONE_PREVIEW_COUNT = 5
 
 function timeframeLabel(goal: Goal): string | null {
   if (goal.timeframe === 'week' && goal.weekOf) {
@@ -43,6 +45,12 @@ export function GoalCard({
   const [milestoneInput, setMilestoneInput] = useState('')
   const [editingMilestoneId, setEditingMilestoneId] = useState<string | null>(null)
   const [editingMilestoneInput, setEditingMilestoneInput] = useState('')
+  const [showAllMilestones, setShowAllMilestones] = useState(false)
+
+  const milestonesDone = goal.milestones.filter((m) => m.done).length
+  const hasMoreMilestones = goal.milestones.length > MILESTONE_PREVIEW_COUNT
+  const visibleMilestones =
+    showAllMilestones || !hasMoreMilestones ? goal.milestones : goal.milestones.slice(0, MILESTONE_PREVIEW_COUNT)
 
   function saveTitle() {
     if (titleInput.trim()) onRename(titleInput.trim())
@@ -128,8 +136,32 @@ export function GoalCard({
       </div>
 
       {goal.milestones.length > 0 && (
-        <ul className="flex flex-col gap-1">
-          {goal.milestones.map((m) =>
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-ink-faint">
+            {milestonesDone}/{goal.milestones.length} done
+          </p>
+          {hasMoreMilestones && (
+            <button
+              onClick={() => setShowAllMilestones((prev) => !prev)}
+              className="flex items-center gap-1 text-sm font-medium text-ink-faint hover:text-ink-soft"
+            >
+              {showAllMilestones ? (
+                <>
+                  Show less <ChevronUp size={14} />
+                </>
+              ) : (
+                <>
+                  See all {goal.milestones.length} <ChevronDown size={14} />
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      )}
+
+      {goal.milestones.length > 0 && (
+        <ul className="flex max-h-72 flex-col gap-1 overflow-y-auto">
+          {visibleMilestones.map((m) =>
             editingMilestoneId === m.id ? (
               <li key={m.id} className="flex items-center gap-2">
                 <Input

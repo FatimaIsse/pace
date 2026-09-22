@@ -3,6 +3,7 @@ import { AuthProvider } from '@/context/AuthContext'
 import { PreferencesProvider } from '@/context/PreferencesContext'
 import { ThemeProvider } from '@/context/ThemeContext'
 import { UIProvider } from '@/context/UIContext'
+import { MoodSoundProvider } from '@/context/MoodSoundContext'
 import { ProtectedRoute, OnboardingRoute, PublicOnlyRoute, RootRedirect } from '@/routes/RouteGuards'
 import { AppShell } from '@/layouts/AppShell'
 import { FirebaseSetupNotice } from '@/components/FirebaseSetupNotice'
@@ -18,6 +19,9 @@ import { Habits } from '@/pages/Habits'
 import { Projects } from '@/pages/Projects'
 import { ProjectDetail } from '@/pages/ProjectDetail'
 import { Me } from '@/pages/Me'
+import { MeAccount } from '@/pages/MeAccount'
+import { MeStats } from '@/pages/MeStats'
+import { MePreferences } from '@/pages/MePreferences'
 import { Privacy } from '@/pages/legal/Privacy'
 import { Terms } from '@/pages/legal/Terms'
 import { SpotifyCallback } from '@/pages/SpotifyCallback'
@@ -37,6 +41,7 @@ export default function App() {
         <AuthProvider>
           <PreferencesProvider>
             <UIProvider>
+              <MoodSoundProvider>
               <Routes>
                 <Route path="/" element={<RootRedirect />} />
                 <Route path="/privacy" element={<Privacy />} />
@@ -61,11 +66,15 @@ export default function App() {
                     <Route path="/projects" element={<Projects />} />
                     <Route path="/projects/:projectId" element={<ProjectDetail />} />
                     <Route path="/me" element={<Me />} />
+                    <Route path="/me/account" element={<MeAccount />} />
+                    <Route path="/me/stats" element={<MeStats />} />
+                    <Route path="/me/preferences" element={<MePreferences />} />
                   </Route>
                 </Route>
 
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
+              </MoodSoundProvider>
             </UIProvider>
           </PreferencesProvider>
         </AuthProvider>

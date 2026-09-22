@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { User } from 'firebase/auth'
 import { watchAuthState } from '@/firebase/auth'
-import { getUserProfile, hasAnyUserData, patchUserProfile } from '@/firebase/firestore'
+import { createUserProfile, getUserProfile, hasAnyUserData, patchUserProfile } from '@/firebase/firestore'
 import { withTimeout } from '@/utils/promise'
 import type { UserProfile } from '@/types'
 
@@ -18,13 +18,42 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-// A profile can end up stuck with onboardingComplete: false even though the
-// person clearly has a real account in use (an earlier save that silently
-// failed, a doc created before that field existed, etc.) — if they already
-// have real data, treat onboarding as done and self-heal the flag instead of
-// routing them back through onboarding on every single login.
-async function resolveOnboardingState(uid: string, profile: UserProfile | null): Promise<UserProfile | null> {
-  if (!profile || profile.onboardingComplete) return profile
+// Two different ways a profile can end up broken, both self-healed here
+// rather than leaving the person stuck:
+//  1. The profile document is missing entirely — a real Firebase Auth user
+//     with no corresponding users/{uid} doc, which throws NOT_FOUND on every
+//     subsequent update and silently blocks onboarding-complete routing.
+//     Recreated from whatever Auth already knows (name, email).
+//  2. The doc exists but onboardingComplete is stuck false even though the
+//     person clearly has a real account in use (an earlier save that
+//     silently failed, a doc created before that field existed, etc.).
+// Both cases use the same signal — does this account actually have real
+// data — to decide whether onboarding should count as already done.
+async function resolveOnboardingState(authUser: User, profile: UserProfile | null): Promise<UserProfile | null> {
+  const uid = authUser.uid
+
+  if (!profile) {
+    const hasData = await withTimeout(hasAnyUserData(uid), 6000, false)
+    const created: UserProfile = {
+      uid,
+      name: authUser.displayName ?? '',
+      email: authUser.email ?? '',
+      createdAt: new Date().toISOString(),
+      onboardingComplete: hasData,
+      goals: [],
+    }
+    const recreated = await withTimeout(
+      (async () => {
+        await createUserProfile(created)
+        return created
+      })(),
+      6000,
+      null,
+    )
+    return recreated
+  }
+
+  if (profile.onboardingComplete) return profile
   const hasData = await withTimeout(hasAnyUserData(uid), 6000, false)
   if (!hasData) return profile
   await withTimeout(patchUserProfile(uid, { onboardingComplete: true }), 6000, undefined)
@@ -47,11 +76,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [profileError, setProfileError] = useState(false)
 
-  async function loadProfile(uid: string) {
+  async function loadProfile(authUser: User) {
+    const uid = authUser.uid
     for (let attempt = 1; attempt <= PROFILE_LOAD_ATTEMPTS; attempt++) {
       const result = await withTimeout<UserProfile | null | typeof LOAD_FAILED>(getUserProfile(uid), PROFILE_LOAD_TIMEOUT_MS, LOAD_FAILED)
       if (result !== LOAD_FAILED) {
-        setProfile(await resolveOnboardingState(uid, result))
+        setProfile(await resolveOnboardingState(authUser, result))
         setProfileError(false)
         return
       }
@@ -68,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = watchAuthState(async (nextUser) => {
       setUser(nextUser)
       if (nextUser) {
-        await loadProfile(nextUser.uid)
+        await loadProfile(nextUser)
       } else {
         setProfile(null)
         setProfileError(false)
@@ -79,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const refreshProfile = async () => {
-    if (user) await loadProfile(user.uid)
+    if (user) await loadProfile(user)
   }
 
   return (

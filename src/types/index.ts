@@ -22,6 +22,7 @@ export interface UserProfile {
   goals: string[] // selected onboarding motivations, e.g. "Feel less overwhelmed"
   lifeContext?: string // free text from onboarding brain dump
   photoURL?: string | null
+  bio?: string // short tagline shown under the name on Me, e.g. "Progress over perfection."
 }
 
 export interface Preferences {

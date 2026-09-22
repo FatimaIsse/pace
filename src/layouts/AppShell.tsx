@@ -6,6 +6,7 @@ import { PauseBanner } from '@/components/features/PauseBanner'
 import { FocusMode } from '@/components/features/FocusMode'
 import { OverwhelmedMode } from '@/components/features/OverwhelmedMode'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import { MoodSoundPicker } from '@/components/ui/MoodSoundPicker'
 import logo from '@/assets/logo.png'
 
 export function AppShell() {
@@ -18,7 +19,10 @@ export function AppShell() {
             <img src={logo} alt="" className="h-6 w-6" />
             <span className="text-[15px] font-semibold text-ink">Pace</span>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-1">
+            <MoodSoundPicker />
+            <ThemeToggle />
+          </div>
         </header>
         <PauseBanner />
         <main className="flex-1 px-5 pb-28 pt-6 sm:px-8 sm:pt-10 md:pb-10">

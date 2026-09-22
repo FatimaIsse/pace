@@ -4,9 +4,13 @@ service cloud.firestore {
   match /databases/{database}/documents {
     match /users/{uid} {
       allow read, delete: if request.auth != null && request.auth.uid == uid;
-      allow create, update: if request.auth != null
+      allow create: if request.auth != null && request.auth.uid == uid && request.resource.data.uid == uid;
+      // Ownership is already guaranteed by the {uid} path segment matching
+      // request.auth.uid — this only additionally blocks a write that tries
+      // to *reassign* the uid field to someone else's id via a partial update.
+      allow update: if request.auth != null
         && request.auth.uid == uid
-        && request.resource.data.uid == uid;
+        && (!('uid' in request.resource.data) || request.resource.data.uid == uid);
 
       match /{collection}/{docId} {
         allow read, write: if request.auth != null && request.auth.uid == uid;
