@@ -1,16 +1,17 @@
 import { useState } from 'react'
-import { Clock, List } from 'lucide-react'
+import { Clock, List, Trash2 } from 'lucide-react'
 import { useTasks } from '@/hooks/useTasks'
 import { useHabits } from '@/hooks/useHabits'
 import { isToday, todayISO } from '@/utils/date'
 import { cn } from '@/utils/cn'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { TaskCard } from '@/components/features/TaskCard'
+import type { Task } from '@/types'
 
 type ViewMode = 'simple' | 'timeline'
 
 export function DayPlan() {
-  const { tasks, completeTask, uncompleteTask } = useTasks()
+  const { tasks, completeTask, uncompleteTask, removeTask } = useTasks()
   const { habits, hasSessionToday } = useHabits()
   const [mode, setMode] = useState<ViewMode>('simple')
 
@@ -25,6 +26,10 @@ export function DayPlan() {
     .sort((a, b) => (b.completedAt ?? '').localeCompare(a.completedAt ?? ''))
 
   const isEmpty = fixed.length === 0 && flexible.length === 0 && pendingHabits.length === 0 && completedToday.length === 0
+
+  function handleRemove(task: Task) {
+    if (window.confirm(`Delete "${task.title}"? This can't be undone.`)) removeTask(task.id)
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -52,18 +57,32 @@ export function DayPlan() {
       {!isEmpty && mode === 'simple' && (
         <ol className="flex flex-col gap-2">
           {fixed.map((task) => (
-            <li key={task.id} className="flex items-center gap-4 rounded-[var(--radius-card)] border border-border bg-surface px-4 py-3.5">
+            <li key={task.id} className="group flex items-center gap-4 rounded-[var(--radius-card)] border border-border bg-surface px-4 py-3.5">
               <span className="w-14 shrink-0 text-sm font-semibold text-ink-soft">{task.scheduledTime}</span>
               <button onClick={() => completeTask(task.id)} className="flex-1 text-left text-[15px] font-medium text-ink">
                 {task.title}
               </button>
+              <button
+                onClick={() => handleRemove(task)}
+                aria-label={`Delete ${task.title}`}
+                className="shrink-0 text-ink-faint opacity-0 transition-opacity hover:text-error group-hover:opacity-100"
+              >
+                <Trash2 size={16} />
+              </button>
             </li>
           ))}
           {flexible.map((task) => (
-            <li key={task.id} className="flex items-center gap-4 rounded-[var(--radius-card)] border border-border bg-surface px-4 py-3.5">
+            <li key={task.id} className="group flex items-center gap-4 rounded-[var(--radius-card)] border border-border bg-surface px-4 py-3.5">
               <span className="w-14 shrink-0 text-sm text-ink-faint">{task.duration}m</span>
               <button onClick={() => completeTask(task.id)} className="flex-1 text-left text-[15px] font-medium text-ink">
                 {task.title}
+              </button>
+              <button
+                onClick={() => handleRemove(task)}
+                aria-label={`Delete ${task.title}`}
+                className="shrink-0 text-ink-faint opacity-0 transition-opacity hover:text-error group-hover:opacity-100"
+              >
+                <Trash2 size={16} />
               </button>
             </li>
           ))}
@@ -112,7 +131,13 @@ export function DayPlan() {
         <div className="flex flex-col gap-2">
           <h2 className="text-[15px] font-semibold text-ink-soft">Completed ({completedToday.length})</h2>
           {completedToday.map((task) => (
-            <TaskCard key={task.id} task={task} completed onComplete={() => uncompleteTask(task.id)} />
+            <TaskCard
+              key={task.id}
+              task={task}
+              completed
+              onComplete={() => uncompleteTask(task.id)}
+              onRemove={() => removeTask(task.id)}
+            />
           ))}
         </div>
       )}
