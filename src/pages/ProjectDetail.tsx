@@ -11,6 +11,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { OverflowMenu } from '@/components/ui/OverflowMenu'
+import { PriorityDot } from '@/components/ui/PriorityDot'
 import { PrimaryTaskCard } from '@/components/features/PrimaryTaskCard'
 import { TaskCard } from '@/components/features/TaskCard'
 import { QuickAddTask } from '@/components/features/QuickAddTask'
@@ -160,10 +161,11 @@ export function ProjectDetail() {
               key={p}
               onClick={() => updateProject(project.id, { priority: p })}
               className={cn(
-                'rounded-full border border-border px-3.5 py-1.5 text-sm font-medium text-ink-soft transition-colors duration-200',
+                'inline-flex items-center gap-1.5 rounded-full border border-border px-3.5 py-1.5 text-sm font-medium text-ink-soft transition-colors duration-200',
                 normalizeTaskPriority(project.priority) === p && 'border-primary-text bg-sage-soft text-primary-text',
               )}
             >
+              <PriorityDot priority={p} />
               {PRIORITY_LABEL[p]}
             </button>
           ))}

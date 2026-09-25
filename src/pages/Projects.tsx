@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { PriorityDot } from '@/components/ui/PriorityDot'
 import { ProjectCard } from '@/components/features/ProjectCard'
 import type { InboxRouteState } from '@/components/features/InboxSheet'
 import type { TaskPriority } from '@/types'
@@ -96,10 +97,11 @@ export function Projects() {
                   key={p}
                   onClick={() => setPriority(p)}
                   className={cn(
-                    'flex-1 rounded-[var(--radius-button)] border border-border py-2 text-sm font-medium text-ink-soft transition-colors duration-200',
+                    'flex flex-1 items-center justify-center gap-1.5 rounded-[var(--radius-button)] border border-border py-2 text-sm font-medium text-ink-soft transition-colors duration-200',
                     priority === p && 'border-primary-text bg-sage-soft text-primary-text',
                   )}
                 >
+                  <PriorityDot priority={p} />
                   {PRIORITY_LABEL[p]}
                 </button>
               ))}

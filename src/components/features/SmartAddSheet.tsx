@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Sheet } from '@/components/ui/Sheet'
 import { Textarea } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { PriorityDot } from '@/components/ui/PriorityDot'
 import { useUI } from '@/context/UIContext'
 import { useTasks } from '@/hooks/useTasks'
 import { useCreateFromClassifiedItem } from '@/hooks/useCreateFromClassifiedItem'
@@ -188,10 +189,11 @@ export function SmartAddSheet() {
                           key={p}
                           onClick={() => setPriority(p)}
                           className={cn(
-                            'flex-1 rounded-[var(--radius-button)] border border-border py-2 text-sm font-medium text-ink-soft transition-colors duration-200',
+                            'flex flex-1 items-center justify-center gap-1.5 rounded-[var(--radius-button)] border border-border py-2 text-sm font-medium text-ink-soft transition-colors duration-200',
                             priority === p && 'border-primary-text bg-sage-soft text-primary-text',
                           )}
                         >
+                          <PriorityDot priority={p} />
                           {PRIORITY_LABEL[p]}
                         </button>
                       ))}

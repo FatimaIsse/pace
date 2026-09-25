@@ -3,6 +3,7 @@ import { Minus, Plus as PlusIcon } from 'lucide-react'
 import { Sheet } from '@/components/ui/Sheet'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { PriorityDot } from '@/components/ui/PriorityDot'
 import { useTasks, type NewTaskInput } from '@/hooks/useTasks'
 import { useProjects } from '@/hooks/useProjects'
 import { normalizeTaskPriority, PRIORITY_LABEL, suggestScheduleDate } from '@/services/planning'
@@ -236,10 +237,11 @@ export function QuickAddTask({
                     key={p}
                     onClick={() => setPriority(p)}
                     className={cn(
-                      'flex-1 rounded-[var(--radius-button)] border border-border py-2 text-sm font-medium text-ink-soft transition-colors duration-200',
+                      'flex flex-1 items-center justify-center gap-1.5 rounded-[var(--radius-button)] border border-border py-2 text-sm font-medium text-ink-soft transition-colors duration-200',
                       priority === p && 'border-primary-text bg-sage-soft text-primary-text',
                     )}
                   >
+                    <PriorityDot priority={p} />
                     {PRIORITY_LABEL[p]}
                   </button>
                 ))}
