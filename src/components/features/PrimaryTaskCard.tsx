@@ -1,12 +1,16 @@
+import { useState } from 'react'
 import { ArrowRightLeft, Pencil, SkipForward, Trash2 } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { OverflowMenu, type OverflowMenuItem } from '@/components/ui/OverflowMenu'
-import type { Task } from '@/types'
+import { deadlineLabel, explainTaskChoice, normalizeTaskPriority, PRIORITY_LABEL } from '@/services/planning'
+import type { DailyCapacity, Task } from '@/types'
 
 export function PrimaryTaskCard({
   task,
   eyebrow = 'Right now',
+  capacity,
+  allTasks = [],
   onStart,
   onSkip,
   onEdit,
@@ -15,12 +19,16 @@ export function PrimaryTaskCard({
 }: {
   task: Task
   eyebrow?: string
+  capacity: DailyCapacity
+  allTasks?: Task[]
   onStart: () => void
   onSkip: () => void
   onEdit?: () => void
   onMove?: () => void
   onRemove?: () => void
 }) {
+  const [showWhy, setShowWhy] = useState(false)
+
   function handleRemove() {
     if (window.confirm(`Delete "${task.title}"? This can't be undone.`)) onRemove?.()
   }
@@ -32,6 +40,10 @@ export function PrimaryTaskCard({
     menuItems.push({ label: 'Delete', icon: <Trash2 size={15} />, onClick: handleRemove, variant: 'danger' })
   }
 
+  const deadline = deadlineLabel(task.dueDate)
+  const priorityLabel = PRIORITY_LABEL[normalizeTaskPriority(task.priority)]
+  const metaLine = deadline ? `${priorityLabel} · ${deadline}` : priorityLabel
+
   return (
     <Card className="animate-card-in flex flex-col gap-4">
       <div className="flex items-start justify-between gap-3">
@@ -39,9 +51,22 @@ export function PrimaryTaskCard({
           <p className="text-sm font-medium text-ink-faint">{eyebrow}</p>
           <h2 className="mt-1 text-[22px] font-semibold leading-snug text-ink sm:text-2xl">{task.title}</h2>
           <p className="mt-1 text-[15px] text-ink-soft">{task.duration} min</p>
+          <p className="text-sm text-ink-faint">{metaLine}</p>
         </button>
         <OverflowMenu items={menuItems} label={`More options for ${task.title}`} />
       </div>
+
+      {showWhy ? (
+        <p className="-mt-2 text-sm text-ink-faint">{explainTaskChoice(task, capacity, allTasks)}</p>
+      ) : (
+        <button
+          onClick={() => setShowWhy(true)}
+          className="-mt-2 self-start text-sm font-medium text-ink-faint underline-offset-2 hover:text-ink-soft hover:underline"
+        >
+          Why this now?
+        </button>
+      )}
+
       <Button onClick={onStart}>Start</Button>
     </Card>
   )

@@ -36,6 +36,13 @@ export type TaskStatus = 'active' | 'done' | 'archived'
 export type TaskTiming = 'fixed' | 'flexible'
 export type TaskEnergy = 1 | 2 | 3 // low, medium, high
 
+// 'must' | 'should' | 'could' is the current, human-worded scale. Older
+// stored tasks may still hold the previous 'high' | 'medium' | 'low' values —
+// normalizeTaskPriority() in services/planning.ts maps those on read, so
+// nothing needs a Firestore migration.
+export type TaskPriority = 'must' | 'should' | 'could'
+export type LegacyTaskPriority = 'high' | 'medium' | 'low'
+
 export interface Task {
   id: string
   title: string
@@ -48,7 +55,8 @@ export interface Task {
   projectId: string | null
   goalId: string | null
   weeklyFocusId: string | null
-  priority: 'low' | 'medium' | 'high'
+  priority: TaskPriority | LegacyTaskPriority
+  dependsOnTaskId: string | null // "blocked by" — this task shouldn't be recommended as Right Now until that one is done
   energy: TaskEnergy
   isTop3: boolean
   parentTaskId: string | null // set when a task is a broken-down subtask

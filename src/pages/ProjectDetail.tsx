@@ -157,6 +157,8 @@ export function ProjectDetail() {
         <PrimaryTaskCard
           task={nextStepTask}
           eyebrow="Next step"
+          capacity={capacity}
+          allTasks={tasks}
           onStart={() => startFocus(nextStepTask)}
           onSkip={() => skipTask(nextStepTask.id, 'not_today')}
           onEdit={() => setEditingTask(nextStepTask)}

@@ -123,7 +123,7 @@ export function OverwhelmedMode() {
               <p className="text-sm font-medium text-ink-faint">Just this.</p>
               <h1 className="mt-2 text-2xl font-semibold text-ink">{current.title}</h1>
               <p className="mt-1 text-[15px] text-ink-soft">
-                {current.duration} min · {explainTaskChoice(current)}
+                {current.duration} min · {explainTaskChoice(current, capacity, tasks)}
               </p>
               <div className="mt-6 flex flex-col gap-2.5">
                 {step === 'task' ? (

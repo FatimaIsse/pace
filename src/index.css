@@ -1,17 +1,17 @@
 @import 'tailwindcss';
 
 @theme {
-  --color-canvas: #f7f8f5;
+  --color-canvas: #faf8f8;
   --color-surface: #ffffff;
-  --color-primary: #48695a;
-  --color-primary-hover: #395447;
-  --color-sage-soft: #e8f0eb;
+  --color-primary: #b0375c;
+  --color-primary-hover: #932d4b;
+  --color-sage-soft: #fdedef;
   --color-accent: #e8a96b;
-  --color-ink: #1f2923;
-  --color-ink-soft: #68726c;
-  --color-ink-faint: #6b746e; /* was #919a94 (2.72:1, failed WCAG AA) — now clears 4.5:1 against canvas */
-  --color-border: #e3e8e4;
-  --color-soft: #f1f4f1;
+  --color-ink: #261e21;
+  --color-ink-soft: #75676d;
+  --color-ink-faint: #9c8f94;
+  --color-border: #e9e1e4;
+  --color-soft: #f7f2f4;
   --color-success: #527a60;
   --color-warning: #b27a45;
   --color-error: #a95c5c;
@@ -21,45 +21,45 @@
   --radius-card: 1rem;
   --radius-button: 0.75rem;
 
-  --shadow-card: 0 2px 10px rgba(31, 41, 35, 0.04);
+  --shadow-card: 0 2px 10px rgba(38, 30, 33, 0.05);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --color-canvas: #141815;
-    --color-surface: #1c211d;
-    --color-primary: #7ba98d;
-    --color-primary-hover: #8fbc9f;
-    --color-sage-soft: #24352b;
+    --color-canvas: #141011;
+    --color-surface: #1d181a;
+    --color-primary: #d45a7c;
+    --color-primary-hover: #e0789a;
+    --color-sage-soft: #3a2029;
     --color-accent: #eab577;
-    --color-ink: #eef1ee;
-    --color-ink-soft: #a3ada6;
-    --color-ink-faint: #8b958f; /* was #6e786f (3.91:1, failed WCAG AA) — now clears 4.5:1 against canvas and surface */
-    --color-border: #2c332d;
-    --color-soft: #232a24;
+    --color-ink: #f9f4f5;
+    --color-ink-soft: #b8a9af;
+    --color-ink-faint: #9c8b90; /* not given directly — derived to clear 4.5:1 against canvas/surface, between ink-soft and canvas */
+    --color-border: #352a2e;
+    --color-soft: #251e21;
     --color-success: #6fa47f;
     --color-warning: #d99a5f;
     --color-error: #d17d7d;
-    --shadow-card: 0 2px 10px rgba(0, 0, 0, 0.3);
+    --shadow-card: 0 2px 10px rgba(0, 0, 0, 0.35);
   }
 }
 
 :root[data-theme='dark'] {
-  --color-canvas: #141815;
-  --color-surface: #1c211d;
-  --color-primary: #7ba98d;
-  --color-primary-hover: #8fbc9f;
-  --color-sage-soft: #24352b;
+  --color-canvas: #141011;
+  --color-surface: #1d181a;
+  --color-primary: #d45a7c;
+  --color-primary-hover: #e0789a;
+  --color-sage-soft: #3a2029;
   --color-accent: #eab577;
-  --color-ink: #eef1ee;
-  --color-ink-soft: #a3ada6;
-  --color-ink-faint: #8b958f;
-  --color-border: #2c332d;
-  --color-soft: #232a24;
+  --color-ink: #f9f4f5;
+  --color-ink-soft: #b8a9af;
+  --color-ink-faint: #9c8b90;
+  --color-border: #352a2e;
+  --color-soft: #251e21;
   --color-success: #6fa47f;
   --color-warning: #d99a5f;
   --color-error: #d17d7d;
-  --shadow-card: 0 2px 10px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 2px 10px rgba(0, 0, 0, 0.35);
 }
 
 @layer base {

@@ -209,6 +209,8 @@ export function Today() {
         {plan.rightNow ? (
           <PrimaryTaskCard
             task={plan.rightNow}
+            capacity={capacity}
+            allTasks={tasks}
             onStart={() => startFocus(plan.rightNow!)}
             onSkip={() => setSkipTarget(plan.rightNow)}
             onEdit={() => setEditingTask(plan.rightNow)}

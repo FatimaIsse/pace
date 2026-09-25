@@ -17,6 +17,7 @@ export interface NewTaskInput {
   goalId?: string | null
   weeklyFocusId?: string | null
   priority?: Task['priority']
+  dependsOnTaskId?: string | null
   energy?: Task['energy']
   recurrence?: Task['recurrence']
   parentTaskId?: string | null
@@ -36,7 +37,8 @@ function toTask(input: NewTaskInput): Omit<Task, 'id'> {
     projectId: input.projectId ?? null,
     goalId: input.goalId ?? null,
     weeklyFocusId: input.weeklyFocusId ?? null,
-    priority: input.priority ?? 'medium',
+    priority: input.priority ?? 'should',
+    dependsOnTaskId: input.dependsOnTaskId ?? null,
     energy: input.energy ?? 2,
     isTop3: false,
     parentTaskId: input.parentTaskId ?? null,

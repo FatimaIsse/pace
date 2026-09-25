@@ -5,9 +5,12 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useTasks, type NewTaskInput } from '@/hooks/useTasks'
 import { useProjects } from '@/hooks/useProjects'
-import type { Task } from '@/types'
+import { normalizeTaskPriority, PRIORITY_LABEL, suggestScheduleDate } from '@/services/planning'
+import type { Task, TaskPriority } from '@/types'
 import { cn } from '@/utils/cn'
 import { todayISO } from '@/utils/date'
+
+const PRIORITY_OPTIONS: TaskPriority[] = ['could', 'should', 'must']
 
 const DURATION_PRESETS = [10, 15, 20, 30, 45, 60]
 const DURATION_STEP = 5
@@ -28,7 +31,7 @@ export function QuickAddTask({
   initialTitle?: string
   onCreated?: () => void
 }) {
-  const { addTask, updateTask } = useTasks()
+  const { tasks, addTask, updateTask } = useTasks()
   const { projects } = useProjects()
   const isEditing = Boolean(task)
 
@@ -40,7 +43,8 @@ export function QuickAddTask({
   const [scheduledTime, setScheduledTime] = useState('')
   const [dueDate, setDueDate] = useState('')
   const [projectId, setProjectId] = useState(defaultProjectId ?? '')
-  const [priority, setPriority] = useState<Task['priority']>('medium')
+  const [priority, setPriority] = useState<TaskPriority>('should')
+  const [dependsOnTaskId, setDependsOnTaskId] = useState('')
   const [energy, setEnergy] = useState<Task['energy']>(2)
 
   function reset() {
@@ -52,7 +56,8 @@ export function QuickAddTask({
     setScheduledTime('')
     setDueDate('')
     setProjectId(defaultProjectId ?? '')
-    setPriority('medium')
+    setPriority('should')
+    setDependsOnTaskId('')
     setEnergy(2)
   }
 
@@ -66,7 +71,8 @@ export function QuickAddTask({
       setScheduledTime(task.scheduledTime ?? '')
       setDueDate(task.dueDate ?? '')
       setProjectId(task.projectId ?? defaultProjectId ?? '')
-      setPriority(task.priority)
+      setPriority(normalizeTaskPriority(task.priority))
+      setDependsOnTaskId(task.dependsOnTaskId ?? '')
       setEnergy(task.energy)
       setShowMore(false)
     } else {
@@ -80,6 +86,13 @@ export function QuickAddTask({
     onClose()
   }
 
+  // A deadline suggests its own scheduling headroom — nudges "When?" earlier
+  // than the deadline itself rather than defaulting to the last possible day.
+  function handleDueDateChange(next: string) {
+    setDueDate(next)
+    if (next) setScheduledFor(suggestScheduleDate(next, duration))
+  }
+
   async function handleSubmit() {
     if (!title.trim()) return
     const input: NewTaskInput = {
@@ -91,6 +104,7 @@ export function QuickAddTask({
       dueDate: dueDate || null,
       projectId: projectId || null,
       priority,
+      dependsOnTaskId: dependsOnTaskId || null,
       energy,
     }
     if (isEditing && task) {
@@ -101,6 +115,8 @@ export function QuickAddTask({
     }
     handleClose()
   }
+
+  const dependencyOptions = tasks.filter((t) => t.status === 'active' && t.id !== task?.id)
 
   return (
     <Sheet open={open} onClose={handleClose} title={isEditing ? 'Edit task' : 'Quick add'}>
@@ -187,7 +203,12 @@ export function QuickAddTask({
               />
             )}
 
-            <Input type="date" label="Deadline (optional)" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+            <Input
+              type="date"
+              label="Deadline (optional)"
+              value={dueDate}
+              onChange={(e) => handleDueDateChange(e.target.value)}
+            />
 
             {projects.length > 0 && (
               <div>
@@ -210,20 +231,38 @@ export function QuickAddTask({
             <div>
               <p className="mb-2 text-sm font-medium text-ink">Priority</p>
               <div className="flex gap-2">
-                {(['low', 'medium', 'high'] as const).map((p) => (
+                {PRIORITY_OPTIONS.map((p) => (
                   <button
                     key={p}
                     onClick={() => setPriority(p)}
                     className={cn(
-                      'flex-1 rounded-[var(--radius-button)] border border-border py-2 text-sm font-medium capitalize text-ink-soft transition-colors duration-200',
+                      'flex-1 rounded-[var(--radius-button)] border border-border py-2 text-sm font-medium text-ink-soft transition-colors duration-200',
                       priority === p && 'border-primary bg-sage-soft text-primary',
                     )}
                   >
-                    {p}
+                    {PRIORITY_LABEL[p]}
                   </button>
                 ))}
               </div>
             </div>
+
+            {dependencyOptions.length > 0 && (
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-ink">Blocked by (optional)</label>
+                <select
+                  value={dependsOnTaskId}
+                  onChange={(e) => setDependsOnTaskId(e.target.value)}
+                  className="h-12 w-full rounded-[var(--radius-button)] border border-border bg-surface px-4 text-[15px] text-ink"
+                >
+                  <option value="">Nothing</option>
+                  {dependencyOptions.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div>
               <p className="mb-2 text-sm font-medium text-ink">Energy required</p>

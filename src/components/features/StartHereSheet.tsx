@@ -25,7 +25,7 @@ export function StartHereSheet({
           <p className="text-sm font-medium text-ink-faint">Start here.</p>
           <h2 className="text-2xl font-semibold text-ink">{chosen.title}</h2>
           <p className="text-[15px] text-ink-soft">{chosen.duration} min</p>
-          <p className="text-sm text-ink-faint">{explainTaskChoice(chosen)}</p>
+          <p className="text-sm text-ink-faint">{explainTaskChoice(chosen, capacity, tasks)}</p>
           <Button
             onClick={() => {
               onStart(chosen)

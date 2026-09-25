@@ -1,5 +1,6 @@
 import { Check, ArrowRightLeft, Pencil, SkipForward, Trash2 } from 'lucide-react'
 import { OverflowMenu, type OverflowMenuItem } from '@/components/ui/OverflowMenu'
+import { deadlineLabel, normalizeTaskPriority, PRIORITY_LABEL } from '@/services/planning'
 import type { Task } from '@/types'
 import { cn } from '@/utils/cn'
 
@@ -32,6 +33,10 @@ export function TaskCard({
     menuItems.push({ label: 'Delete', icon: <Trash2 size={15} />, onClick: handleRemove, variant: 'danger' })
   }
 
+  const deadline = deadlineLabel(task.dueDate)
+  const priorityLabel = PRIORITY_LABEL[normalizeTaskPriority(task.priority)]
+  const metaLine = deadline ? `${priorityLabel} · ${deadline}` : priorityLabel
+
   return (
     <div
       className={cn(
@@ -55,6 +60,7 @@ export function TaskCard({
           {task.title}
         </p>
         <p className="text-sm text-ink-faint">{task.duration} min</p>
+        {!completed && <p className="text-xs text-ink-faint">{metaLine}</p>}
       </button>
 
       {menuItems.length > 0 && <OverflowMenu items={menuItems} label={`More options for ${task.title}`} />}

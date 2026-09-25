@@ -5,9 +5,9 @@ import { Button } from '@/components/ui/Button'
 import { useUI } from '@/context/UIContext'
 import { useTasks } from '@/hooks/useTasks'
 import { useCreateFromClassifiedItem } from '@/hooks/useCreateFromClassifiedItem'
-import { classifyEntry, estimateDuration, looksAlreadyDone } from '@/services/planning'
+import { classifyEntry, estimateDuration, looksAlreadyDone, PRIORITY_LABEL } from '@/services/planning'
 import { cn } from '@/utils/cn'
-import type { BrainDumpItem, Task } from '@/types'
+import type { BrainDumpItem, Task, TaskPriority } from '@/types'
 
 const TYPE_OPTIONS: { value: BrainDumpItem['type']; label: string }[] = [
   { value: 'task', label: 'Task' },
@@ -17,6 +17,7 @@ const TYPE_OPTIONS: { value: BrainDumpItem['type']; label: string }[] = [
 ]
 
 const DURATION_PRESETS = [10, 15, 20, 30, 45, 60]
+const PRIORITY_OPTIONS: TaskPriority[] = ['could', 'should', 'must']
 
 function normalizeType(type: BrainDumpItem['type']): BrainDumpItem['type'] {
   // Smart Add only ever offers Task/Habit/Goal/Project as a correction —
@@ -34,6 +35,7 @@ export function SmartAddSheet() {
   const [typeOverride, setTypeOverride] = useState<BrainDumpItem['type'] | null>(null)
   const [showMore, setShowMore] = useState(false)
   const [duration, setDuration] = useState<number | null>(null)
+  const [priority, setPriority] = useState<TaskPriority>('should')
   const [confirmingDone, setConfirmingDone] = useState(false)
   const [created, setCreated] = useState<{ type: BrainDumpItem['type'] } | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -48,6 +50,7 @@ export function SmartAddSheet() {
     setTypeOverride(null)
     setShowMore(false)
     setDuration(null)
+    setPriority('should')
     setConfirmingDone(false)
     setCreated(null)
   }
@@ -62,6 +65,7 @@ export function SmartAddSheet() {
     await createFromClassifiedItem(
       { type: effectiveType, text: trimmed, duration: effectiveType === 'task' ? effectiveDuration : undefined },
       'manual',
+      effectiveType === 'task' ? priority : undefined,
     )
     setSubmitting(false)
     setCreated({ type: effectiveType })
@@ -158,21 +162,40 @@ export function SmartAddSheet() {
                 {showMore ? 'Hide options' : 'More options'}
               </button>
               {showMore && (
-                <div className="rounded-[var(--radius-card)] border border-border bg-soft p-4">
-                  <p className="mb-2 text-sm font-medium text-ink">Duration</p>
-                  <div className="flex flex-wrap gap-2">
-                    {DURATION_PRESETS.map((d) => (
-                      <button
-                        key={d}
-                        onClick={() => setDuration(d)}
-                        className={cn(
-                          'rounded-full border border-border px-3.5 py-1.5 text-sm font-medium text-ink-soft transition-colors duration-200',
-                          effectiveDuration === d && 'border-primary bg-sage-soft text-primary',
-                        )}
-                      >
-                        {d} min
-                      </button>
-                    ))}
+                <div className="flex flex-col gap-4 rounded-[var(--radius-card)] border border-border bg-soft p-4">
+                  <div>
+                    <p className="mb-2 text-sm font-medium text-ink">Duration</p>
+                    <div className="flex flex-wrap gap-2">
+                      {DURATION_PRESETS.map((d) => (
+                        <button
+                          key={d}
+                          onClick={() => setDuration(d)}
+                          className={cn(
+                            'rounded-full border border-border px-3.5 py-1.5 text-sm font-medium text-ink-soft transition-colors duration-200',
+                            effectiveDuration === d && 'border-primary bg-sage-soft text-primary',
+                          )}
+                        >
+                          {d} min
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="mb-2 text-sm font-medium text-ink">Priority</p>
+                    <div className="flex gap-2">
+                      {PRIORITY_OPTIONS.map((p) => (
+                        <button
+                          key={p}
+                          onClick={() => setPriority(p)}
+                          className={cn(
+                            'flex-1 rounded-[var(--radius-button)] border border-border py-2 text-sm font-medium text-ink-soft transition-colors duration-200',
+                            priority === p && 'border-primary bg-sage-soft text-primary',
+                          )}
+                        >
+                          {PRIORITY_LABEL[p]}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}

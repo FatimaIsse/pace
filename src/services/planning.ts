@@ -17,7 +17,105 @@ import type {
   Insight,
   SkipReason,
   Task,
+  TaskPriority,
 } from '@/types'
+
+// ---------------------------------------------------------------------------
+// Priority
+// ---------------------------------------------------------------------------
+
+export const PRIORITY_LABEL: Record<TaskPriority, string> = { must: 'Must', should: 'Should', could: 'Could' }
+const PRIORITY_WEIGHT: Record<TaskPriority, number> = { must: 6, should: 3, could: 1 }
+
+// Maps a task's stored priority — which may still hold the pre-rename
+// 'high' | 'medium' | 'low' values from before this app used Must/Should/
+// Could — onto the current scale. Called at every point a priority is
+// scored or displayed, so no Firestore migration is needed.
+export function normalizeTaskPriority(priority: Task['priority']): TaskPriority {
+  switch (priority) {
+    case 'must':
+    case 'should':
+    case 'could':
+      return priority
+    case 'high':
+      return 'must'
+    case 'medium':
+      return 'should'
+    case 'low':
+      return 'could'
+    default:
+      return 'should'
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Dependencies
+// ---------------------------------------------------------------------------
+
+// A task "blocked by" another shouldn't be recommended as Right Now until
+// that blocker is done — checked against whatever task list the caller
+// already has in scope (the full active set for Today, a project's own
+// tasks for "Help me move this forward", etc).
+export function isTaskBlocked(task: Task, allTasks: Task[]): boolean {
+  if (!task.dependsOnTaskId) return false
+  const blocker = allTasks.find((t) => t.id === task.dependsOnTaskId)
+  return Boolean(blocker && blocker.status !== 'done')
+}
+
+// ---------------------------------------------------------------------------
+// Deadline urgency
+// ---------------------------------------------------------------------------
+
+function daysUntil(dueDate: string): number {
+  const due = new Date(dueDate)
+  due.setHours(0, 0, 0, 0)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return Math.round((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+}
+
+// Calm, specific label text — never a bare "OVERDUE" shout. Null means the
+// deadline is far enough out that it doesn't need to compete for attention
+// yet (the spec's "due in 7+ days: normal").
+export function deadlineLabel(dueDate: string | null): string | null {
+  if (!dueDate) return null
+  const days = daysUntil(dueDate)
+  if (days > 6) return null
+  if (days === 0) return 'Due today'
+  if (days === 1) return 'Due tomorrow'
+  if (days > 1) return `${days} days left`
+  if (days === -1) return 'Overdue by 1 day'
+  return `Overdue by ${Math.abs(days)} days`
+}
+
+// Feeds scoreTask — a tiered curve rather than a straight line, so "overdue"
+// stays urgent without escalating forever the longer it sits (which would
+// let one old overdue task quietly dominate every day after).
+function deadlineUrgencyScore(dueDate: string | null): number {
+  if (!dueDate) return 0
+  const days = daysUntil(dueDate)
+  if (days <= 0) return 14
+  if (days === 1) return 11
+  if (days <= 3) return 7
+  if (days <= 7) return 3
+  return 0
+}
+
+// "Pace should try to schedule tasks BEFORE the real deadline" — suggests a
+// scheduledFor date with a little headroom before dueDate, scaled gently by
+// how long the task will take, instead of defaulting to the deadline itself.
+export function suggestScheduleDate(dueDate: string, durationMinutes: number): string {
+  const bufferDays = durationMinutes >= 90 ? 2 : 1
+  const due = new Date(dueDate)
+  const suggested = new Date(due)
+  suggested.setDate(suggested.getDate() - bufferDays)
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  if (suggested.getTime() < today.getTime()) return dueDate
+
+  return suggested.toISOString().slice(0, 10)
+}
 
 // ---------------------------------------------------------------------------
 // Daily capacity
@@ -55,18 +153,11 @@ export function applyCapacityPreferences(
 // Choosing what matters next
 // ---------------------------------------------------------------------------
 
-function scoreTask(task: Task, capacity: DailyCapacity): number {
+function scoreTask(task: Task, capacity: DailyCapacity, allTasks: Task[] = []): number {
   let score = 0
 
-  if (task.dueDate) {
-    const daysUntilDue = Math.max(
-      0,
-      (new Date(task.dueDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
-    )
-    score += Math.max(0, 12 - daysUntilDue)
-  }
-
-  score += { high: 6, medium: 3, low: 1 }[task.priority]
+  score += deadlineUrgencyScore(task.dueDate)
+  score += PRIORITY_WEIGHT[normalizeTaskPriority(task.priority)]
   score += task.isTop3 ? 4 : 0
 
   const fitsCapacity = task.duration <= capacity.availableMinutes
@@ -81,14 +172,18 @@ function scoreTask(task: Task, capacity: DailyCapacity): number {
   // Don't let a repeatedly-skipped task keep dominating the top slot.
   score -= Math.min(task.skipCount, 3) * 0.75
 
+  // Finishing this frees up something else waiting on it.
+  const unlocksSomething = allTasks.some((t) => t.dependsOnTaskId === task.id && t.status === 'active')
+  if (unlocksSomething) score += 2
+
   return score
 }
 
 export function chooseNextTask(tasks: Task[], capacity: DailyCapacity): Task | null {
-  const eligible = tasks.filter((t) => t.status === 'active')
+  const eligible = tasks.filter((t) => t.status === 'active' && !isTaskBlocked(t, tasks))
   if (eligible.length === 0) return null
 
-  const ranked = [...eligible].sort((a, b) => scoreTask(b, capacity) - scoreTask(a, capacity))
+  const ranked = [...eligible].sort((a, b) => scoreTask(b, capacity, tasks) - scoreTask(a, capacity, tasks))
   return ranked[0] ?? null
 }
 
@@ -107,19 +202,26 @@ export function pickNextProjectStep(
   return existing ? { task: existing } : { newStep: firstStepOnly(projectName, 20) }
 }
 
-export function explainTaskChoice(task: Task): string {
-  const reasons: string[] = []
+// "Why this now?" — short, specific, never just a keyword list. Checked in
+// priority order roughly matching what actually drove the score, so the
+// explanation stays honest rather than picking an arbitrary true fact.
+export function explainTaskChoice(task: Task, capacity: DailyCapacity, allTasks: Task[] = []): string {
+  const priority = normalizeTaskPriority(task.priority)
+  const label = deadlineLabel(task.dueDate)
 
-  if (task.dueDate) {
-    const daysUntilDue = (new Date(task.dueDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-    if (daysUntilDue <= 2) reasons.push('due soon')
-  }
-  if (task.duration <= 15) reasons.push('quick')
-  if (task.priority === 'high') reasons.push('important')
-  if (task.skipCount > 0) reasons.push('clears mental space')
+  if (label && priority === 'must') return 'Due soon and important.'
+  if (label) return `${label}.`
+  if (task.skipCount >= 2) return "You've postponed this twice."
 
-  if (reasons.length === 0) return 'A good next step.'
-  return reasons.slice(0, 3).join(' + ')
+  const unlocksSomething = allTasks.some((t) => t.dependsOnTaskId === task.id && t.status === 'active')
+  if (unlocksSomething) return 'This unlocks another task.'
+
+  const energyFits = task.energy <= ENERGY_RANK[capacity.level]
+  if (energyFits && task.duration <= 15) return 'Quick task that clears mental space.'
+  if (energyFits) return 'This fits your current energy.'
+  if (priority === 'must') return 'This matters most right now.'
+
+  return 'A good next step.'
 }
 
 export interface DailyPlan {
@@ -129,10 +231,16 @@ export interface DailyPlan {
 
 export function generateDailyPlan(tasks: Task[], capacity: DailyCapacity): DailyPlan {
   const eligible = tasks.filter((t) => t.status === 'active')
-  const ranked = [...eligible].sort((a, b) => scoreTask(b, capacity) - scoreTask(a, capacity))
-  const [rightNow, ...rest] = ranked
+  const unblocked = eligible.filter((t) => !isTaskBlocked(t, tasks))
+  const rankedUnblocked = [...unblocked].sort(
+    (a, b) => scoreTask(b, capacity, tasks) - scoreTask(a, capacity, tasks),
+  )
+  const rightNow = rankedUnblocked[0] ?? null
+  const rest = eligible
+    .filter((t) => t.id !== rightNow?.id)
+    .sort((a, b) => scoreTask(b, capacity, tasks) - scoreTask(a, capacity, tasks))
   return {
-    rightNow: rightNow ?? null,
+    rightNow,
     later: rest.slice(0, Math.max(0, capacity.recommendedTaskCount - 1)),
   }
 }
@@ -167,10 +275,14 @@ export interface RealisticPlan {
 // hoping generateDailyPlan's cap quietly trimmed enough.
 export function makeRealistic(tasks: Task[], capacity: DailyCapacity): RealisticPlan {
   const scheduled = tasks.filter((t) => t.status === 'active')
-  const protectedTasks = scheduled.filter((t) => t.timing === 'fixed' || t.isTop3 || t.priority === 'high')
+  const protectedTasks = scheduled.filter(
+    (t) => t.timing === 'fixed' || t.isTop3 || normalizeTaskPriority(t.priority) === 'must',
+  )
   const flexible = scheduled.filter((t) => !protectedTasks.includes(t))
 
-  const rankedFlexible = [...flexible].sort((a, b) => scoreTask(b, capacity) - scoreTask(a, capacity))
+  const rankedFlexible = [...flexible].sort(
+    (a, b) => scoreTask(b, capacity, tasks) - scoreTask(a, capacity, tasks),
+  )
 
   const kept: Task[] = [...protectedTasks]
   const moved: Task[] = []

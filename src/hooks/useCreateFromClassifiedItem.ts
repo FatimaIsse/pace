@@ -2,7 +2,7 @@ import { useTasks } from '@/hooks/useTasks'
 import { useProjects } from '@/hooks/useProjects'
 import { useGoals } from '@/hooks/useGoals'
 import { useHabits } from '@/hooks/useHabits'
-import type { BrainDumpItem, Task } from '@/types'
+import type { BrainDumpItem, Task, TaskPriority } from '@/types'
 
 // Turns one classified fragment into the real thing it sounds like — a task,
 // project, goal, or habit — instead of filing it away for later manual
@@ -18,11 +18,12 @@ export function useCreateFromClassifiedItem() {
   async function createFromClassifiedItem(
     item: BrainDumpItem,
     source: Task['source'] = 'brain_dump',
+    priority?: TaskPriority,
   ): Promise<boolean> {
     switch (item.type) {
       case 'task':
       case 'reminder':
-        await addTask({ title: item.text, duration: item.duration ?? 15, source })
+        await addTask({ title: item.text, duration: item.duration ?? 15, source, priority })
         return true
       case 'project':
         await addProject(item.text)
