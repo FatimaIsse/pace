@@ -89,6 +89,18 @@ export function deadlineLabel(dueDate: string | null): string | null {
   return `Overdue by ${Math.abs(days)} days`
 }
 
+// A quiet color cue for the deadline text itself — only for the two moments
+// that actually warrant one (on the deadline, or past it). Everything further
+// out stays neutral text so this doesn't turn into a wall of colored dates.
+export type DeadlineUrgencyLevel = 'overdue' | 'today' | null
+export function deadlineUrgencyLevel(dueDate: string | null): DeadlineUrgencyLevel {
+  if (!dueDate) return null
+  const days = daysUntil(dueDate)
+  if (days < 0) return 'overdue'
+  if (days === 0) return 'today'
+  return null
+}
+
 // Feeds scoreTask — a tiered curve rather than a straight line, so "overdue"
 // stays urgent without escalating forever the longer it sits (which would
 // let one old overdue task quietly dominate every day after).

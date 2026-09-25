@@ -18,8 +18,8 @@ export default defineConfig({
         name: 'Pace',
         short_name: 'Pace',
         description: 'Pace — life, at your pace.',
-        theme_color: '#F7F8F5',
-        background_color: '#F7F8F5',
+        theme_color: '#faf8f8',
+        background_color: '#faf8f8',
         display: 'standalone',
         start_url: '/',
         icons: [

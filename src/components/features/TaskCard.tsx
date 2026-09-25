@@ -1,4 +1,5 @@
 import { Check, ArrowRightLeft, Pencil, SkipForward, Trash2 } from 'lucide-react'
+import { DeadlineText } from '@/components/ui/DeadlineText'
 import { OverflowMenu, type OverflowMenuItem } from '@/components/ui/OverflowMenu'
 import { PriorityDot } from '@/components/ui/PriorityDot'
 import { deadlineLabel, normalizeTaskPriority, PRIORITY_LABEL } from '@/services/planning'
@@ -37,7 +38,6 @@ export function TaskCard({
   const deadline = deadlineLabel(task.dueDate)
   const priority = normalizeTaskPriority(task.priority)
   const priorityLabel = PRIORITY_LABEL[priority]
-  const metaLine = deadline ? `${priorityLabel} · ${deadline}` : priorityLabel
 
   return (
     <div
@@ -65,7 +65,15 @@ export function TaskCard({
         {!completed && (
           <p className="flex items-center gap-1.5 text-xs text-ink-faint">
             <PriorityDot priority={priority} />
-            {metaLine}
+            <span>
+              {priorityLabel}
+              {deadline && (
+                <>
+                  {' · '}
+                  <DeadlineText dueDate={task.dueDate} label={deadline} />
+                </>
+              )}
+            </span>
           </p>
         )}
       </button>

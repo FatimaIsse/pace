@@ -10,12 +10,13 @@ import { useHabits } from '@/hooks/useHabits'
 import { useGoals } from '@/hooks/useGoals'
 import { useProjects } from '@/hooks/useProjects'
 import { useBrainDump } from '@/hooks/useBrainDump'
-import { applyCapacityPreferences, generateDailyPlan, makeRealistic, personalizedFocus } from '@/services/planning'
+import { applyCapacityPreferences, deadlineLabel, generateDailyPlan, makeRealistic, personalizedFocus } from '@/services/planning'
 import { friendlyGreeting, isToday, todayISO } from '@/utils/date'
 import type { SkipReason, Task } from '@/types'
 import type { InboxRouteState } from '@/components/features/InboxSheet'
 
 import { Button } from '@/components/ui/Button'
+import { DeadlineText } from '@/components/ui/DeadlineText'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { DailyCheckIn } from '@/components/features/DailyCheckIn'
 import { PrimaryTaskCard } from '@/components/features/PrimaryTaskCard'
@@ -53,7 +54,9 @@ function PausedToday({ deadlines }: { deadlines: Task[] }) {
           {deadlines.map((task) => (
             <div key={task.id} className="rounded-[var(--radius-card)] border border-border bg-surface p-3.5">
               <p className="text-[15px] font-medium text-ink">{task.title}</p>
-              <p className="text-sm text-ink-faint">Due {task.dueDate}</p>
+              <p className="text-sm text-ink-faint">
+                {deadlineLabel(task.dueDate) && <DeadlineText dueDate={task.dueDate} label={deadlineLabel(task.dueDate)!} />}
+              </p>
             </div>
           ))}
         </div>
