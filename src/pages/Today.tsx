@@ -8,6 +8,7 @@ import { useCheckIn } from '@/hooks/useCheckIn'
 import { useTasks } from '@/hooks/useTasks'
 import { useHabits } from '@/hooks/useHabits'
 import { useGoals } from '@/hooks/useGoals'
+import { useProjects } from '@/hooks/useProjects'
 import { useBrainDump } from '@/hooks/useBrainDump'
 import { applyCapacityPreferences, generateDailyPlan, makeRealistic, personalizedFocus } from '@/services/planning'
 import { friendlyGreeting, isToday, todayISO } from '@/utils/date'
@@ -73,6 +74,7 @@ export function Today() {
   const { tasks, updateTask, completeTask, uncompleteTask, skipTask, archiveTask, removeTask } = useTasks()
   const { habits, sessionsFor, hasSessionToday, logSession } = useHabits()
   const { goals } = useGoals()
+  const { projects } = useProjects()
   const { removeInboxItem } = useBrainDump()
   const location = useLocation()
   const navigate = useNavigate()
@@ -153,7 +155,7 @@ export function Today() {
   const checkIn = todayCheckIn
   const capacity = applyCapacityPreferences(checkIn.energy, checkIn.dayLoad, { planningStyle, dailyCapacityPref })
   const eligibleTasks = activeTasks.filter((t) => t.scheduledFor === todayISO() || t.scheduledFor === null)
-  const plan = generateDailyPlan(eligibleTasks, capacity)
+  const plan = generateDailyPlan(eligibleTasks, capacity, projects)
   const activeHabits = habits.filter((h) => !h.archivedAt)
 
   async function handlePlanChange(reason: PlanChangeReason) {
@@ -175,7 +177,7 @@ export function Today() {
     const nextEnergy = reason === 'energy_dropped' ? 'low' : checkIn.energy
     const nextDayLoad = reason === 'energy_dropped' ? checkIn.dayLoad : 'packed'
     const nextCapacity = applyCapacityPreferences(nextEnergy, nextDayLoad, { planningStyle, dailyCapacityPref })
-    const { kept, moved } = makeRealistic(eligibleTasks, nextCapacity)
+    const { kept, moved } = makeRealistic(eligibleTasks, nextCapacity, projects)
 
     const undoMap = new Map(moved.map((t) => [t.id, t.scheduledFor]))
     for (const task of moved) {
@@ -211,6 +213,7 @@ export function Today() {
             task={plan.rightNow}
             capacity={capacity}
             allTasks={tasks}
+            projects={projects}
             onStart={() => startFocus(plan.rightNow!)}
             onSkip={() => setSkipTarget(plan.rightNow)}
             onEdit={() => setEditingTask(plan.rightNow)}
@@ -349,6 +352,7 @@ export function Today() {
         onClose={() => setStartHereOpen(false)}
         tasks={activeTasks}
         capacity={capacity}
+        projects={projects}
         onStart={(task) => startFocus(task)}
       />
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createDoc, patchDoc, removeDoc, subscribeToCollection } from '@/firebase/firestore'
 import { useAuth } from '@/context/AuthContext'
-import type { Project, ProjectStatus } from '@/types'
+import type { Project, ProjectStatus, TaskPriority } from '@/types'
 
 const COLLECTION = 'projects'
 
@@ -24,12 +24,13 @@ export function useProjects() {
     return unsubscribe
   }, [user])
 
-  async function addProject(name: string, notes = '') {
+  async function addProject(name: string, priority: TaskPriority = 'should', notes = '') {
     if (!user) return
     const project: Omit<Project, 'id'> = {
       name,
       notes,
       status: 'just_started',
+      priority,
       createdAt: new Date().toISOString(),
       archivedAt: null,
     }

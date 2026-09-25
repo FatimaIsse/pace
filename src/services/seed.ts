@@ -11,6 +11,7 @@ export async function seedDemoData(uid: string) {
     name: 'Placement',
     notes: '',
     status: 'making_progress',
+    priority: 'must',
     createdAt: new Date().toISOString(),
     archivedAt: null,
   } satisfies Omit<Project, 'id'>)
@@ -19,6 +20,7 @@ export async function seedDemoData(uid: string) {
     name: 'Moving Home',
     notes: '',
     status: 'just_started',
+    priority: 'should',
     createdAt: new Date().toISOString(),
     archivedAt: null,
   } satisfies Omit<Project, 'id'>)

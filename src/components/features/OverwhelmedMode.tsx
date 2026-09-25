@@ -5,6 +5,7 @@ import type { Task } from '@/types'
 import { applyCapacityPreferences, chooseNextTask, explainTaskChoice, firstStepOnly } from '@/services/planning'
 import { useUI } from '@/context/UIContext'
 import { useTasks } from '@/hooks/useTasks'
+import { useProjects } from '@/hooks/useProjects'
 import { useCheckIn } from '@/hooks/useCheckIn'
 import { usePreferences } from '@/context/PreferencesContext'
 
@@ -13,6 +14,7 @@ const BUDGETS = [5, 15, 30]
 export function OverwhelmedMode() {
   const { overwhelmedOpen, closeOverwhelmed } = useUI()
   const { tasks, completeTask, addTask, removeTask } = useTasks()
+  const { projects } = useProjects()
   const { todayCheckIn } = useCheckIn()
   const { planningStyle, dailyCapacityPref } = usePreferences()
 
@@ -41,7 +43,7 @@ export function OverwhelmedMode() {
     const active = tasks.filter((t) => t.status === 'active')
     const fitting = active.filter((t) => t.duration <= withinMinutes)
     const pool = fitting.length > 0 ? fitting : active
-    const next = chooseNextTask(pool, { ...capacity, availableMinutes: withinMinutes })
+    const next = chooseNextTask(pool, { ...capacity, availableMinutes: withinMinutes }, projects)
     setCurrent(next)
     setStep(next ? 'task' : 'done')
   }
@@ -123,7 +125,7 @@ export function OverwhelmedMode() {
               <p className="text-sm font-medium text-ink-faint">Just this.</p>
               <h1 className="mt-2 text-2xl font-semibold text-ink">{current.title}</h1>
               <p className="mt-1 text-[15px] text-ink-soft">
-                {current.duration} min · {explainTaskChoice(current, capacity, tasks)}
+                {current.duration} min · {explainTaskChoice(current, capacity, tasks, projects)}
               </p>
               <div className="mt-6 flex flex-col gap-2.5">
                 {step === 'task' ? (

@@ -3,6 +3,7 @@ import { Trash2 } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { StatusProgress } from '@/components/ui/ProgressBar'
 import { OverflowMenu, type OverflowMenuItem } from '@/components/ui/OverflowMenu'
+import { normalizeTaskPriority, PRIORITY_LABEL } from '@/services/planning'
 import type { Project } from '@/types'
 
 export function ProjectCard({
@@ -31,7 +32,7 @@ export function ProjectCard({
 
         <p className="pr-8 text-[17px] font-semibold text-ink">{project.name}</p>
         <p className="mt-0.5 text-sm text-ink-faint">
-          {taskCount} {taskCount === 1 ? 'task' : 'tasks'}
+          {PRIORITY_LABEL[normalizeTaskPriority(project.priority)]} · {taskCount} {taskCount === 1 ? 'task' : 'tasks'}
         </p>
         <StatusProgress status={project.status} className="mt-3" />
       </Card>

@@ -77,6 +77,7 @@ export interface Project {
   name: string
   notes: string
   status: ProjectStatus
+  priority: TaskPriority | LegacyTaskPriority
   createdAt: string
   archivedAt: string | null
 }

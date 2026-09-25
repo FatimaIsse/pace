@@ -4,12 +4,17 @@ import { Plus } from 'lucide-react'
 import { useProjects } from '@/hooks/useProjects'
 import { useTasks } from '@/hooks/useTasks'
 import { useBrainDump } from '@/hooks/useBrainDump'
+import { PRIORITY_LABEL } from '@/services/planning'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { ProjectCard } from '@/components/features/ProjectCard'
 import type { InboxRouteState } from '@/components/features/InboxSheet'
+import type { TaskPriority } from '@/types'
+import { cn } from '@/utils/cn'
+
+const PRIORITY_OPTIONS: TaskPriority[] = ['could', 'should', 'must']
 
 export function Projects() {
   const { projects, addProject, removeProject } = useProjects()
@@ -19,6 +24,7 @@ export function Projects() {
   const navigate = useNavigate()
   const [creating, setCreating] = useState(false)
   const [name, setName] = useState('')
+  const [priority, setPriority] = useState<TaskPriority>('should')
   const [inboxPrefill, setInboxPrefill] = useState<{ dumpId: string; key: string } | null>(null)
 
   const activeProjects = projects.filter((p) => !p.archivedAt)
@@ -36,14 +42,16 @@ export function Projects() {
   function cancelCreate() {
     setCreating(false)
     setName('')
+    setPriority('should')
     setInboxPrefill(null)
   }
 
   async function handleAdd() {
     if (!name.trim()) return
-    await addProject(name.trim())
+    await addProject(name.trim(), priority)
     if (inboxPrefill) await removeInboxItem(inboxPrefill.dumpId, inboxPrefill.key)
     setName('')
+    setPriority('should')
     setCreating(false)
     setInboxPrefill(null)
   }
@@ -80,6 +88,23 @@ export function Projects() {
       {creating ? (
         <Card className="flex flex-col gap-3">
           <Input label="Project name" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+          <div>
+            <p className="mb-2 text-sm font-medium text-ink">How important is this?</p>
+            <div className="flex gap-2">
+              {PRIORITY_OPTIONS.map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPriority(p)}
+                  className={cn(
+                    'flex-1 rounded-[var(--radius-button)] border border-border py-2 text-sm font-medium text-ink-soft transition-colors duration-200',
+                    priority === p && 'border-primary-text bg-sage-soft text-primary-text',
+                  )}
+                >
+                  {PRIORITY_LABEL[p]}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="flex gap-2">
             <Button variant="secondary" className="flex-1" onClick={cancelCreate}>
               Cancel

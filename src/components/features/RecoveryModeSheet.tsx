@@ -3,6 +3,7 @@ import { X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useUI } from '@/context/UIContext'
 import { useTasks } from '@/hooks/useTasks'
+import { useProjects } from '@/hooks/useProjects'
 import { useCheckIn } from '@/hooks/useCheckIn'
 import { usePreferences } from '@/context/PreferencesContext'
 import { applyCapacityPreferences, chooseNextTask, explainTaskChoice } from '@/services/planning'
@@ -16,6 +17,7 @@ type Triage = 'matters' | 'move' | 'gone'
 export function RecoveryModeSheet() {
   const { recoveryOpen, closeRecovery, startFocus } = useUI()
   const { tasks, updateTask, archiveTask } = useTasks()
+  const { projects } = useProjects()
   const { todayCheckIn } = useCheckIn()
   const { planningStyle, dailyCapacityPref } = usePreferences()
 
@@ -60,7 +62,8 @@ export function RecoveryModeSheet() {
     planningStyle,
     dailyCapacityPref,
   })
-  const nextAction = step === 'done' ? chooseNextTask(tasks.filter((t) => t.status === 'active'), capacity) : null
+  const nextAction =
+    step === 'done' ? chooseNextTask(tasks.filter((t) => t.status === 'active'), capacity, projects) : null
   const current = queue[index]
 
   return (
@@ -111,7 +114,7 @@ export function RecoveryModeSheet() {
                   <p className="text-sm font-medium text-ink-faint">Just start here.</p>
                   <h1 className="mt-2 text-2xl font-semibold text-ink">{nextAction.title}</h1>
                   <p className="mt-1 text-[15px] text-ink-soft">
-                    {nextAction.duration} min · {explainTaskChoice(nextAction, capacity, tasks)}
+                    {nextAction.duration} min · {explainTaskChoice(nextAction, capacity, tasks, projects)}
                   </p>
                   <Button
                     className="mt-6 w-full"

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Clock, List } from 'lucide-react'
 import { useTasks } from '@/hooks/useTasks'
 import { useHabits } from '@/hooks/useHabits'
+import { useProjects } from '@/hooks/useProjects'
 import { useCheckIn } from '@/hooks/useCheckIn'
 import { usePreferences } from '@/context/PreferencesContext'
 import { applyCapacityPreferences, isDayHeavy, makeRealistic } from '@/services/planning'
@@ -16,6 +17,7 @@ type ViewMode = 'simple' | 'timeline'
 export function DayPlan() {
   const { tasks, completeTask, uncompleteTask, updateTask, removeTask } = useTasks()
   const { habits, hasSessionToday } = useHabits()
+  const { projects } = useProjects()
   const { todayCheckIn } = useCheckIn()
   const { planningStyle, dailyCapacityPref, gentleReminders } = usePreferences()
   const [mode, setMode] = useState<ViewMode>('simple')
@@ -45,7 +47,7 @@ export function DayPlan() {
   }
 
   async function handleMakeRealistic() {
-    const { kept, moved } = makeRealistic(todaysTasks, capacity)
+    const { kept, moved } = makeRealistic(todaysTasks, capacity, projects)
     const map = new Map(moved.map((t) => [t.id, t.scheduledFor]))
     for (const task of moved) {
       await updateTask(task.id, { scheduledFor: null })

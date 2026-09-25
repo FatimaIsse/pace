@@ -15,6 +15,7 @@ import type {
   HabitSession,
   HabitTarget,
   Insight,
+  Project,
   SkipReason,
   Task,
   TaskPriority,
@@ -153,11 +154,23 @@ export function applyCapacityPreferences(
 // Choosing what matters next
 // ---------------------------------------------------------------------------
 
-function scoreTask(task: Task, capacity: DailyCapacity, allTasks: Task[] = []): number {
+// A project's own priority nudges every task inside it — a Must-priority
+// project pulls its tasks up even if the task itself was left at the
+// default "Should", without letting project weight ever outrank a task's
+// own explicit priority (it's always applied at half strength).
+function projectPriorityBoost(task: Task, projects: Project[]): number {
+  if (!task.projectId) return 0
+  const project = projects.find((p) => p.id === task.projectId)
+  if (!project) return 0
+  return PRIORITY_WEIGHT[normalizeTaskPriority(project.priority)] * 0.5
+}
+
+function scoreTask(task: Task, capacity: DailyCapacity, allTasks: Task[] = [], projects: Project[] = []): number {
   let score = 0
 
   score += deadlineUrgencyScore(task.dueDate)
   score += PRIORITY_WEIGHT[normalizeTaskPriority(task.priority)]
+  score += projectPriorityBoost(task, projects)
   score += task.isTop3 ? 4 : 0
 
   const fitsCapacity = task.duration <= capacity.availableMinutes
@@ -179,11 +192,17 @@ function scoreTask(task: Task, capacity: DailyCapacity, allTasks: Task[] = []): 
   return score
 }
 
-export function chooseNextTask(tasks: Task[], capacity: DailyCapacity): Task | null {
+export function chooseNextTask(
+  tasks: Task[],
+  capacity: DailyCapacity,
+  projects: Project[] = [],
+): Task | null {
   const eligible = tasks.filter((t) => t.status === 'active' && !isTaskBlocked(t, tasks))
   if (eligible.length === 0) return null
 
-  const ranked = [...eligible].sort((a, b) => scoreTask(b, capacity, tasks) - scoreTask(a, capacity, tasks))
+  const ranked = [...eligible].sort(
+    (a, b) => scoreTask(b, capacity, tasks, projects) - scoreTask(a, capacity, tasks, projects),
+  )
   return ranked[0] ?? null
 }
 
@@ -205,9 +224,16 @@ export function pickNextProjectStep(
 // "Why this now?" — short, specific, never just a keyword list. Checked in
 // priority order roughly matching what actually drove the score, so the
 // explanation stays honest rather than picking an arbitrary true fact.
-export function explainTaskChoice(task: Task, capacity: DailyCapacity, allTasks: Task[] = []): string {
+export function explainTaskChoice(
+  task: Task,
+  capacity: DailyCapacity,
+  allTasks: Task[] = [],
+  projects: Project[] = [],
+): string {
   const priority = normalizeTaskPriority(task.priority)
   const label = deadlineLabel(task.dueDate)
+  const project = task.projectId ? projects.find((p) => p.id === task.projectId) : undefined
+  const projectIsMust = project && normalizeTaskPriority(project.priority) === 'must'
 
   if (label && priority === 'must') return 'Due soon and important.'
   if (label) return `${label}.`
@@ -215,6 +241,8 @@ export function explainTaskChoice(task: Task, capacity: DailyCapacity, allTasks:
 
   const unlocksSomething = allTasks.some((t) => t.dependsOnTaskId === task.id && t.status === 'active')
   if (unlocksSomething) return 'This unlocks another task.'
+
+  if (projectIsMust) return `Part of ${project!.name}, which matters most right now.`
 
   const energyFits = task.energy <= ENERGY_RANK[capacity.level]
   if (energyFits && task.duration <= 15) return 'Quick task that clears mental space.'
@@ -229,26 +257,26 @@ export interface DailyPlan {
   later: Task[]
 }
 
-export function generateDailyPlan(tasks: Task[], capacity: DailyCapacity): DailyPlan {
+export function generateDailyPlan(tasks: Task[], capacity: DailyCapacity, projects: Project[] = []): DailyPlan {
   const eligible = tasks.filter((t) => t.status === 'active')
   const unblocked = eligible.filter((t) => !isTaskBlocked(t, tasks))
   const rankedUnblocked = [...unblocked].sort(
-    (a, b) => scoreTask(b, capacity, tasks) - scoreTask(a, capacity, tasks),
+    (a, b) => scoreTask(b, capacity, tasks, projects) - scoreTask(a, capacity, tasks, projects),
   )
   const rightNow = rankedUnblocked[0] ?? null
   const rest = eligible
     .filter((t) => t.id !== rightNow?.id)
-    .sort((a, b) => scoreTask(b, capacity, tasks) - scoreTask(a, capacity, tasks))
+    .sort((a, b) => scoreTask(b, capacity, tasks, projects) - scoreTask(a, capacity, tasks, projects))
   return {
     rightNow,
     later: rest.slice(0, Math.max(0, capacity.recommendedTaskCount - 1)),
   }
 }
 
-export function replanDay(tasks: Task[], capacity: DailyCapacity): DailyPlan {
+export function replanDay(tasks: Task[], capacity: DailyCapacity, projects: Project[] = []): DailyPlan {
   // A lighter capacity naturally trims the plan since generateDailyPlan caps
   // `later` by recommendedTaskCount — replanning is just recomputing.
-  return generateDailyPlan(tasks, capacity)
+  return generateDailyPlan(tasks, capacity, projects)
 }
 
 // ---------------------------------------------------------------------------
@@ -273,15 +301,17 @@ export interface RealisticPlan {
 // this is what "Make it realistic" and the real "Plans changed?" replan both
 // call, instead of the old approach of just re-submitting the check-in and
 // hoping generateDailyPlan's cap quietly trimmed enough.
-export function makeRealistic(tasks: Task[], capacity: DailyCapacity): RealisticPlan {
+export function makeRealistic(tasks: Task[], capacity: DailyCapacity, projects: Project[] = []): RealisticPlan {
   const scheduled = tasks.filter((t) => t.status === 'active')
-  const protectedTasks = scheduled.filter(
-    (t) => t.timing === 'fixed' || t.isTop3 || normalizeTaskPriority(t.priority) === 'must',
-  )
+  const protectedTasks = scheduled.filter((t) => {
+    if (t.timing === 'fixed' || t.isTop3 || normalizeTaskPriority(t.priority) === 'must') return true
+    const project = t.projectId ? projects.find((p) => p.id === t.projectId) : undefined
+    return Boolean(project && normalizeTaskPriority(project.priority) === 'must')
+  })
   const flexible = scheduled.filter((t) => !protectedTasks.includes(t))
 
   const rankedFlexible = [...flexible].sort(
-    (a, b) => scoreTask(b, capacity, tasks) - scoreTask(a, capacity, tasks),
+    (a, b) => scoreTask(b, capacity, tasks, projects) - scoreTask(a, capacity, tasks, projects),
   )
 
   const kept: Task[] = [...protectedTasks]

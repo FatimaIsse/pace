@@ -6,7 +6,7 @@ import { useTasks } from '@/hooks/useTasks'
 import { useCheckIn } from '@/hooks/useCheckIn'
 import { useUI } from '@/context/UIContext'
 import { usePreferences } from '@/context/PreferencesContext'
-import { applyCapacityPreferences, pickNextProjectStep } from '@/services/planning'
+import { applyCapacityPreferences, normalizeTaskPriority, PRIORITY_LABEL, pickNextProjectStep } from '@/services/planning'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
@@ -14,7 +14,7 @@ import { OverflowMenu } from '@/components/ui/OverflowMenu'
 import { PrimaryTaskCard } from '@/components/features/PrimaryTaskCard'
 import { TaskCard } from '@/components/features/TaskCard'
 import { QuickAddTask } from '@/components/features/QuickAddTask'
-import type { ProjectStatus, Task } from '@/types'
+import type { ProjectStatus, Task, TaskPriority } from '@/types'
 import { cn } from '@/utils/cn'
 
 const STATUS_OPTIONS: { value: ProjectStatus; label: string }[] = [
@@ -23,6 +23,8 @@ const STATUS_OPTIONS: { value: ProjectStatus; label: string }[] = [
   { value: 'almost_there', label: 'Almost there' },
   { value: 'done', label: 'Done' },
 ]
+
+const PRIORITY_OPTIONS: TaskPriority[] = ['could', 'should', 'must']
 
 export function ProjectDetail() {
   const { projectId } = useParams()
@@ -151,6 +153,21 @@ export function ProjectDetail() {
             </button>
           ))}
         </div>
+
+        <div className="mt-2 flex flex-wrap gap-2">
+          {PRIORITY_OPTIONS.map((p) => (
+            <button
+              key={p}
+              onClick={() => updateProject(project.id, { priority: p })}
+              className={cn(
+                'rounded-full border border-border px-3.5 py-1.5 text-sm font-medium text-ink-soft transition-colors duration-200',
+                normalizeTaskPriority(project.priority) === p && 'border-primary-text bg-sage-soft text-primary-text',
+              )}
+            >
+              {PRIORITY_LABEL[p]}
+            </button>
+          ))}
+        </div>
       </div>
 
       {nextStepTask ? (
@@ -159,6 +176,7 @@ export function ProjectDetail() {
           eyebrow="Next step"
           capacity={capacity}
           allTasks={tasks}
+          projects={projects}
           onStart={() => startFocus(nextStepTask)}
           onSkip={() => skipTask(nextStepTask.id, 'not_today')}
           onEdit={() => setEditingTask(nextStepTask)}

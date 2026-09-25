@@ -4,13 +4,14 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { OverflowMenu, type OverflowMenuItem } from '@/components/ui/OverflowMenu'
 import { deadlineLabel, explainTaskChoice, normalizeTaskPriority, PRIORITY_LABEL } from '@/services/planning'
-import type { DailyCapacity, Task } from '@/types'
+import type { DailyCapacity, Project, Task } from '@/types'
 
 export function PrimaryTaskCard({
   task,
   eyebrow = 'Right now',
   capacity,
   allTasks = [],
+  projects = [],
   onStart,
   onSkip,
   onEdit,
@@ -21,6 +22,7 @@ export function PrimaryTaskCard({
   eyebrow?: string
   capacity: DailyCapacity
   allTasks?: Task[]
+  projects?: Project[]
   onStart: () => void
   onSkip: () => void
   onEdit?: () => void
@@ -57,7 +59,7 @@ export function PrimaryTaskCard({
       </div>
 
       {showWhy ? (
-        <p className="-mt-2 text-sm text-ink-faint">{explainTaskChoice(task, capacity, allTasks)}</p>
+        <p className="-mt-2 text-sm text-ink-faint">{explainTaskChoice(task, capacity, allTasks, projects)}</p>
       ) : (
         <button
           onClick={() => setShowWhy(true)}
