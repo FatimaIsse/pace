@@ -143,7 +143,7 @@ export function SmartAddSheet() {
                     onClick={() => setTypeOverride(opt.value)}
                     className={cn(
                       'flex-1 rounded-[var(--radius-button)] border border-border py-2 text-sm font-medium text-ink-soft transition-colors duration-200',
-                      effectiveType === opt.value && 'border-primary bg-sage-soft text-primary',
+                      effectiveType === opt.value && 'border-primary-text bg-sage-soft text-primary-text',
                     )}
                   >
                     {opt.label}
@@ -172,7 +172,7 @@ export function SmartAddSheet() {
                           onClick={() => setDuration(d)}
                           className={cn(
                             'rounded-full border border-border px-3.5 py-1.5 text-sm font-medium text-ink-soft transition-colors duration-200',
-                            effectiveDuration === d && 'border-primary bg-sage-soft text-primary',
+                            effectiveDuration === d && 'border-primary-text bg-sage-soft text-primary-text',
                           )}
                         >
                           {d} min
@@ -189,7 +189,7 @@ export function SmartAddSheet() {
                           onClick={() => setPriority(p)}
                           className={cn(
                             'flex-1 rounded-[var(--radius-button)] border border-border py-2 text-sm font-medium text-ink-soft transition-colors duration-200',
-                            priority === p && 'border-primary bg-sage-soft text-primary',
+                            priority === p && 'border-primary-text bg-sage-soft text-primary-text',
                           )}
                         >
                           {PRIORITY_LABEL[p]}

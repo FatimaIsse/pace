@@ -57,7 +57,7 @@ export function HabitCard({
                 onLog(loggedVersion, opt.value)
                 setStep('done')
               }}
-              className="flex-1 rounded-[var(--radius-button)] border border-border py-2.5 text-[15px] font-medium text-ink-soft transition-colors duration-200 hover:border-primary hover:text-primary"
+              className="flex-1 rounded-[var(--radius-button)] border border-border py-2.5 text-[15px] font-medium text-ink-soft transition-colors duration-200 hover:border-primary-text hover:text-primary-text"
             >
               {opt.label}
             </button>

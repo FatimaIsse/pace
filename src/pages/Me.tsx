@@ -25,7 +25,7 @@ export function Me() {
 
       <div className="flex flex-col items-center gap-1 text-center">
         <div className="relative">
-          <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-sage-soft text-3xl font-semibold text-primary">
+          <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-sage-soft text-3xl font-semibold text-primary-text">
             {profile?.photoURL ? (
               <img src={profile.photoURL} alt="" className="h-full w-full object-cover" />
             ) : (
@@ -35,7 +35,7 @@ export function Me() {
           <button
             onClick={() => setEditOpen(true)}
             aria-label="Edit profile"
-            className="absolute -bottom-1 -right-1 flex h-9 w-9 items-center justify-center rounded-full border-2 border-canvas bg-primary text-white transition-colors duration-200 hover:bg-primary-hover"
+            className="absolute -bottom-1 -right-1 flex h-9 w-9 items-center justify-center rounded-full border-2 border-canvas bg-primary text-on-primary transition-colors duration-200 hover:bg-primary-hover"
           >
             <Camera size={15} />
           </button>

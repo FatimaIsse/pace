@@ -75,7 +75,7 @@ export function HabitDetailCard({
                     onLog(loggedVersion, opt.value)
                     setLoggingStep('idle')
                   }}
-                  className="flex-1 rounded-[var(--radius-button)] border border-border py-2.5 text-sm font-medium text-ink-soft transition-colors duration-200 hover:border-primary hover:text-primary"
+                  className="flex-1 rounded-[var(--radius-button)] border border-border py-2.5 text-sm font-medium text-ink-soft transition-colors duration-200 hover:border-primary-text hover:text-primary-text"
                 >
                   {opt.label}
                 </button>
@@ -152,7 +152,7 @@ export function HabitDetailCard({
 
       {suggestion && (
         <div className={cn('animate-card-in rounded-[var(--radius-card)] border border-border bg-sage-soft p-4')}>
-          <p className="text-[15px] font-semibold text-primary">Ready for a tiny increase?</p>
+          <p className="text-[15px] font-semibold text-primary-text">Ready for a tiny increase?</p>
           <p className="mt-1 text-sm text-ink-soft">The last 3 sessions felt comfortable.</p>
           <ul className="mt-2 flex flex-col gap-0.5">
             {suggestion.proposed.map((t, i) => (

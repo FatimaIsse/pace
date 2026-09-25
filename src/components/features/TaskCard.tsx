@@ -48,8 +48,8 @@ export function TaskCard({
         onClick={onComplete}
         aria-label={completed ? `Mark "${task.title}" not done` : `Mark "${task.title}" done`}
         className={cn(
-          'flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-border text-transparent transition-colors duration-200 hover:border-primary',
-          completed && 'border-primary bg-primary text-canvas',
+          'flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-border text-transparent transition-colors duration-200 hover:border-primary-text',
+          completed && 'border-primary-text bg-primary-text text-canvas',
         )}
       >
         <Check size={14} strokeWidth={3} />

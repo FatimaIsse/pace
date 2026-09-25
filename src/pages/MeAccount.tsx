@@ -133,7 +133,7 @@ export function MeAccount() {
             <div>
               <p className="text-[15px] font-medium text-ink">Email</p>
               {emailSent ? (
-                <p className="text-sm text-primary">Check your new inbox to confirm the change.</p>
+                <p className="text-sm text-primary-text">Check your new inbox to confirm the change.</p>
               ) : (
                 <p className="text-sm text-ink-faint">{profile?.email}</p>
               )}
@@ -192,7 +192,7 @@ export function MeAccount() {
               <div className="flex min-h-[48px] items-center justify-between gap-4 py-3">
                 <div>
                   <p className="text-[15px] font-medium text-ink">Password</p>
-                  {passwordSaved && <p className="text-sm text-primary">Password updated.</p>}
+                  {passwordSaved && <p className="text-sm text-primary-text">Password updated.</p>}
                 </div>
                 <Button variant="secondary" size="sm" onClick={() => setChangingPassword(true)}>
                   Change

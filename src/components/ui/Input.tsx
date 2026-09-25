@@ -86,7 +86,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             aria-invalid={Boolean(error)}
             aria-describedby={error ? `${fieldId}-error` : hint ? `${fieldId}-hint` : undefined}
             className={cn(
-              'h-12 w-full rounded-[var(--radius-button)] border border-border bg-surface px-4 text-[15px] text-ink placeholder:text-ink-faint focus-visible:border-primary',
+              'h-12 w-full rounded-[var(--radius-button)] border border-border bg-surface px-4 text-[15px] text-ink placeholder:text-ink-faint focus-visible:border-primary-text',
               (isPassword || showVoice) && 'pr-11',
               error && 'border-error',
               className,
@@ -110,7 +110,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             </div>
           )}
         </div>
-        {voice.listening && <p className="text-sm text-primary">Listening…</p>}
+        {voice.listening && <p className="text-sm text-primary-text">Listening…</p>}
         {error && (
           <p id={`${fieldId}-error`} className="text-sm text-error">
             {error}
@@ -153,7 +153,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             onChange={onChange}
             aria-invalid={Boolean(error)}
             className={cn(
-              'w-full resize-none rounded-[var(--radius-button)] border border-border bg-surface px-4 py-3 text-[15px] text-ink placeholder:text-ink-faint focus-visible:border-primary',
+              'w-full resize-none rounded-[var(--radius-button)] border border-border bg-surface px-4 py-3 text-[15px] text-ink placeholder:text-ink-faint focus-visible:border-primary-text',
               showVoice && 'pr-12',
               error && 'border-error',
               className,
@@ -166,7 +166,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             </div>
           )}
         </div>
-        {voice.listening && <p className="text-sm text-primary">Listening…</p>}
+        {voice.listening && <p className="text-sm text-primary-text">Listening…</p>}
         {error && <p className="text-sm text-error">{error}</p>}
         {!error && hint && <p className="text-sm text-ink-faint">{hint}</p>}
       </div>

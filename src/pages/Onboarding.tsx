@@ -113,7 +113,7 @@ export function Onboarding() {
                   onClick={() => toggleGoal(goal)}
                   className={cn(
                     'rounded-full border border-border bg-surface px-4 py-2.5 text-[15px] font-medium text-ink-soft transition-colors duration-200',
-                    goals.includes(goal) && 'border-primary bg-sage-soft text-primary',
+                    goals.includes(goal) && 'border-primary-text bg-sage-soft text-primary-text',
                   )}
                 >
                   {goal}
@@ -123,7 +123,7 @@ export function Onboarding() {
                 onClick={() => setShowCustomGoal((prev) => !prev)}
                 className={cn(
                   'rounded-full border border-border bg-surface px-4 py-2.5 text-[15px] font-medium text-ink-soft transition-colors duration-200',
-                  (showCustomGoal || customGoal.trim()) && 'border-primary bg-sage-soft text-primary',
+                  (showCustomGoal || customGoal.trim()) && 'border-primary-text bg-sage-soft text-primary-text',
                 )}
               >
                 Other

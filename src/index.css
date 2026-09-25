@@ -3,8 +3,14 @@
 @theme {
   --color-canvas: #faf8f8;
   --color-surface: #ffffff;
-  --color-primary: #b0375c;
-  --color-primary-hover: #932d4b;
+  /* Button/CTA fill — intentionally soft in light mode, bolder in dark mode. */
+  --color-primary: #f9dae0;
+  --color-primary-hover: #f2c8d6;
+  --color-on-primary: #261e21; /* text/icon color placed on top of --color-primary */
+  /* Readable accent — selected text, borders, progress fills, small status
+     indicators. --color-primary is too pale in light mode to work as text or
+     a thin border, so anything that needs to stay legible uses this instead. */
+  --color-primary-text: #b0375c;
   --color-sage-soft: #fdedef;
   --color-accent: #e8a96b;
   --color-ink: #261e21;
@@ -28,8 +34,10 @@
   :root:not([data-theme='light']) {
     --color-canvas: #141011;
     --color-surface: #1d181a;
-    --color-primary: #d45a7c;
-    --color-primary-hover: #e0789a;
+    --color-primary: #b0375c;
+    --color-primary-hover: #c34870;
+    --color-on-primary: #ffffff;
+    --color-primary-text: #d45a7c;
     --color-sage-soft: #3a2029;
     --color-accent: #eab577;
     --color-ink: #f9f4f5;
@@ -47,8 +55,10 @@
 :root[data-theme='dark'] {
   --color-canvas: #141011;
   --color-surface: #1d181a;
-  --color-primary: #d45a7c;
-  --color-primary-hover: #e0789a;
+  --color-primary: #b0375c;
+  --color-primary-hover: #c34870;
+  --color-on-primary: #ffffff;
+  --color-primary-text: #d45a7c;
   --color-sage-soft: #3a2029;
   --color-accent: #eab577;
   --color-ink: #f9f4f5;
@@ -80,7 +90,7 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-primary);
+    outline: 2px solid var(--color-primary-text);
     outline-offset: 2px;
     border-radius: 4px;
   }

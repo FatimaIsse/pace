@@ -76,7 +76,7 @@ export function Login() {
       footer={
         <>
           New here?{' '}
-          <Link to="/signup" className="font-medium text-primary">
+          <Link to="/signup" className="font-medium text-primary-text">
             Create an account
           </Link>
         </>

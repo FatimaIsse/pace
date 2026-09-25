@@ -127,7 +127,7 @@ export function GoalCard({
             onClick={() => onStatusChange(value)}
             className={cn(
               'rounded-full border border-border px-3 py-1 text-sm font-medium text-ink-soft transition-colors duration-200',
-              goal.status === value && 'border-primary bg-sage-soft text-primary',
+              goal.status === value && 'border-primary-text bg-sage-soft text-primary-text',
             )}
           >
             {label}
@@ -180,8 +180,8 @@ export function GoalCard({
                 <button
                   onClick={() => onToggleMilestone(m.id)}
                   className={cn(
-                    'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-border text-transparent transition-colors duration-200 hover:border-primary',
-                    m.done && 'border-primary bg-primary text-white',
+                    'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-border text-transparent transition-colors duration-200 hover:border-primary-text',
+                    m.done && 'border-primary-text bg-primary-text text-white',
                   )}
                 >
                   <Check size={11} strokeWidth={3} />

@@ -20,7 +20,7 @@ export function FirebaseSetupNotice() {
           <li>
             Create a project at{' '}
             <a
-              className="text-primary underline"
+              className="text-primary-text underline"
               href="https://console.firebase.google.com/"
               target="_blank"
               rel="noreferrer"

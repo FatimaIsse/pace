@@ -83,7 +83,7 @@ export function InboxSheet({ open, onClose }: { open: boolean; onClose: () => vo
                   </button>
                   <button
                     onClick={() => handleAddAsTask(item.text, item.duration, item.dumpId, item.key)}
-                    className="text-sm font-medium text-primary"
+                    className="text-sm font-medium text-primary-text"
                   >
                     Add as task
                   </button>

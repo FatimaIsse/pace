@@ -20,7 +20,7 @@ export function DotGrid({ sessions, days = 7 }: { sessions: HabitSession[]; days
       {cells.map((cell) => (
         <span
           key={cell.iso}
-          className={cn('h-2.5 w-2.5 rounded-full border border-primary', cell.active ? 'bg-primary' : 'bg-transparent')}
+          className={cn('h-2.5 w-2.5 rounded-full border border-primary-text', cell.active ? 'bg-primary-text' : 'bg-transparent')}
         />
       ))}
     </div>

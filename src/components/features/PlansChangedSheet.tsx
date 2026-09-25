@@ -42,7 +42,7 @@ export function PlansChangedSheet({
             <button
               key={opt.value}
               onClick={() => onSelect(opt.value)}
-              className="rounded-[var(--radius-button)] border border-border px-4 py-3 text-left text-[15px] font-medium text-ink transition-colors duration-200 hover:border-primary hover:bg-sage-soft"
+              className="rounded-[var(--radius-button)] border border-border px-4 py-3 text-left text-[15px] font-medium text-ink transition-colors duration-200 hover:border-primary-text hover:bg-sage-soft"
             >
               {opt.label}
             </button>

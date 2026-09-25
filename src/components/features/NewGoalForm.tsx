@@ -113,7 +113,7 @@ export function NewGoalForm({
               onClick={() => setTimeframe(tf.value)}
               className={cn(
                 'flex-1 rounded-[var(--radius-button)] border border-border py-2 text-sm font-medium text-ink-soft transition-colors duration-200',
-                timeframe === tf.value && 'border-primary bg-sage-soft text-primary',
+                timeframe === tf.value && 'border-primary-text bg-sage-soft text-primary-text',
               )}
             >
               {tf.label}

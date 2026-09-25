@@ -75,7 +75,7 @@ export function DayPlan() {
           <button
             onClick={() => setMode('simple')}
             aria-pressed={mode === 'simple'}
-            className={cn('flex h-9 w-9 items-center justify-center rounded-[var(--radius-button)] text-ink-faint', mode === 'simple' && 'bg-sage-soft text-primary')}
+            className={cn('flex h-9 w-9 items-center justify-center rounded-[var(--radius-button)] text-ink-faint', mode === 'simple' && 'bg-sage-soft text-primary-text')}
             aria-label="Simple view"
           >
             <List size={18} />
@@ -83,7 +83,7 @@ export function DayPlan() {
           <button
             onClick={() => setMode('timeline')}
             aria-pressed={mode === 'timeline'}
-            className={cn('flex h-9 w-9 items-center justify-center rounded-[var(--radius-button)] text-ink-faint', mode === 'timeline' && 'bg-sage-soft text-primary')}
+            className={cn('flex h-9 w-9 items-center justify-center rounded-[var(--radius-button)] text-ink-faint', mode === 'timeline' && 'bg-sage-soft text-primary-text')}
             aria-label="Timeline view"
           >
             <Clock size={18} />
@@ -140,8 +140,8 @@ export function DayPlan() {
           ))}
           {pendingHabits.map((h) => (
             <div key={h.id} className="flex items-center gap-4 rounded-[var(--radius-card)] border border-border bg-sage-soft px-4 py-3.5">
-              <span className="w-14 shrink-0 text-sm text-primary">Daily</span>
-              <span className="flex-1 text-[15px] font-medium text-primary">{h.name}</span>
+              <span className="w-14 shrink-0 text-sm text-primary-text">Daily</span>
+              <span className="flex-1 text-[15px] font-medium text-primary-text">{h.name}</span>
             </div>
           ))}
         </div>
@@ -151,7 +151,7 @@ export function DayPlan() {
         <div className="relative flex flex-col gap-4 border-l-2 border-border pl-5">
           {fixed.map((task) => (
             <div key={task.id} className="relative">
-              <span className="absolute -left-[26px] top-1 h-2.5 w-2.5 rounded-full bg-primary" />
+              <span className="absolute -left-[26px] top-1 h-2.5 w-2.5 rounded-full bg-primary-text" />
               <p className="text-sm font-semibold text-ink-soft">{task.scheduledTime}</p>
               <p className="text-[15px] font-medium text-ink">{task.title}</p>
             </div>

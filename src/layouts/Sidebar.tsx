@@ -31,7 +31,7 @@ export function Sidebar() {
             className={({ isActive }) =>
               cn(
                 'flex items-center gap-3 rounded-[var(--radius-button)] px-3 py-2.5 text-[15px] font-medium text-ink-soft transition-colors duration-200 hover:bg-soft hover:text-ink',
-                isActive && 'bg-sage-soft text-primary hover:bg-sage-soft hover:text-primary',
+                isActive && 'bg-sage-soft text-primary-text hover:bg-sage-soft hover:text-primary-text',
               )
             }
           >

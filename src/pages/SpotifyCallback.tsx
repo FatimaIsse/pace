@@ -32,7 +32,7 @@ export function SpotifyCallback() {
           <p className="text-[15px] text-error">{error}</p>
           <button
             onClick={() => navigate('/me', { replace: true })}
-            className="text-sm font-medium text-primary underline"
+            className="text-sm font-medium text-primary-text underline"
           >
             Back to Pace
           </button>

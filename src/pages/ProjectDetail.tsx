@@ -144,7 +144,7 @@ export function ProjectDetail() {
               onClick={() => updateProjectStatus(project.id, opt.value)}
               className={cn(
                 'rounded-full border border-border px-3.5 py-1.5 text-sm font-medium text-ink-soft transition-colors duration-200',
-                project.status === opt.value && 'border-primary bg-sage-soft text-primary',
+                project.status === opt.value && 'border-primary-text bg-sage-soft text-primary-text',
               )}
             >
               {opt.label}
@@ -176,7 +176,7 @@ export function ProjectDetail() {
         <button
           onClick={handleMoveForward}
           disabled={creatingStep}
-          className="self-start text-sm font-medium text-primary hover:underline"
+          className="self-start text-sm font-medium text-primary-text hover:underline"
         >
           Help me move this forward — {suggestion.newStep.title} ({suggestion.newStep.duration} min)
         </button>

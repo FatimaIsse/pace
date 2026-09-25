@@ -41,7 +41,7 @@ export function Privacy() {
           account can read or write it — no other user can access it. Google's handling of this
           infrastructure is governed by{' '}
           <a
-            className="text-primary underline"
+            className="text-primary-text underline"
             href="https://policies.google.com/privacy"
             target="_blank"
             rel="noreferrer"

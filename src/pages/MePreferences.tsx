@@ -79,7 +79,7 @@ export function MePreferences() {
                 onClick={() => setPlanningStyle(opt.value)}
                 className={cn(
                   'flex-1 rounded-[var(--radius-button)] border border-border py-2 text-sm font-medium text-ink-soft transition-colors duration-200',
-                  planningStyle === opt.value && 'border-primary bg-sage-soft text-primary',
+                  planningStyle === opt.value && 'border-primary-text bg-sage-soft text-primary-text',
                 )}
               >
                 {opt.label}

@@ -26,7 +26,7 @@ export function MoodSoundPicker({ className, align = 'right' }: { className?: st
         aria-expanded={open}
         className={cn(
           'flex h-9 w-9 items-center justify-center rounded-full text-ink-faint transition-colors duration-200 hover:bg-soft hover:text-ink-soft',
-          sound && 'text-primary',
+          sound && 'text-primary-text',
         )}
       >
         <Music size={18} />
@@ -48,7 +48,7 @@ export function MoodSoundPicker({ className, align = 'right' }: { className?: st
             }}
             className={cn(
               'flex w-full items-center gap-1.5 rounded-[var(--radius-button)] px-2.5 py-2 text-left text-sm font-medium text-ink-faint transition-colors duration-200 hover:bg-soft hover:text-ink-soft',
-              !sound && 'bg-sage-soft text-primary',
+              !sound && 'bg-sage-soft text-primary-text',
             )}
           >
             <VolumeX size={14} /> Off
@@ -66,7 +66,7 @@ export function MoodSoundPicker({ className, align = 'right' }: { className?: st
                   isPlaying && 'bg-sage-soft',
                 )}
               >
-                <span className={cn('text-sm font-medium text-ink-soft', isPlaying && 'text-primary')}>
+                <span className={cn('text-sm font-medium text-ink-soft', isPlaying && 'text-primary-text')}>
                   {def.label}
                 </span>
                 <span className="text-xs text-ink-faint">

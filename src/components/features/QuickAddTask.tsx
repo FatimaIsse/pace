@@ -137,7 +137,7 @@ export function QuickAddTask({
                 onClick={() => setDuration(d)}
                 className={cn(
                   'rounded-full border border-border px-3.5 py-1.5 text-sm font-medium text-ink-soft transition-colors duration-200',
-                  duration === d && 'border-primary bg-sage-soft text-primary',
+                  duration === d && 'border-primary-text bg-sage-soft text-primary-text',
                 )}
               >
                 {d} min
@@ -185,7 +185,7 @@ export function QuickAddTask({
                     onClick={() => setTiming(t)}
                     className={cn(
                       'flex-1 rounded-[var(--radius-button)] border border-border py-2 text-sm font-medium capitalize text-ink-soft transition-colors duration-200',
-                      timing === t && 'border-primary bg-sage-soft text-primary',
+                      timing === t && 'border-primary-text bg-sage-soft text-primary-text',
                     )}
                   >
                     {t}
@@ -237,7 +237,7 @@ export function QuickAddTask({
                     onClick={() => setPriority(p)}
                     className={cn(
                       'flex-1 rounded-[var(--radius-button)] border border-border py-2 text-sm font-medium text-ink-soft transition-colors duration-200',
-                      priority === p && 'border-primary bg-sage-soft text-primary',
+                      priority === p && 'border-primary-text bg-sage-soft text-primary-text',
                     )}
                   >
                     {PRIORITY_LABEL[p]}
@@ -273,7 +273,7 @@ export function QuickAddTask({
                     onClick={() => setEnergy(e)}
                     className={cn(
                       'flex-1 rounded-[var(--radius-button)] border border-border py-2 text-sm font-medium text-ink-soft transition-colors duration-200',
-                      energy === e && 'border-primary bg-sage-soft text-primary',
+                      energy === e && 'border-primary-text bg-sage-soft text-primary-text',
                     )}
                   >
                     {'●'.repeat(e)}

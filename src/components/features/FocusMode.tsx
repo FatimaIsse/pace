@@ -100,7 +100,7 @@ export function FocusMode() {
                 >
                   <Minus size={16} />
                 </button>
-                <p className="font-mono text-4xl font-semibold text-primary">{formatClock(secondsLeft)}</p>
+                <p className="font-mono text-4xl font-semibold text-primary-text">{formatClock(secondsLeft)}</p>
                 <button
                   onClick={() => adjustTime(TIME_STEP_SECONDS)}
                   aria-label="Add 5 minutes"

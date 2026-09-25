@@ -38,7 +38,7 @@ export function DailyCheckIn({
               aria-pressed={energy === opt.value}
               className={cn(
                 'flex-1 rounded-[var(--radius-button)] border border-border py-2.5 text-[15px] font-medium text-ink-soft transition-colors duration-200',
-                energy === opt.value && 'border-primary bg-sage-soft text-primary',
+                energy === opt.value && 'border-primary-text bg-sage-soft text-primary-text',
               )}
             >
               {opt.label}
@@ -58,7 +58,7 @@ export function DailyCheckIn({
               aria-pressed={dayLoad === opt.value}
               className={cn(
                 'flex-1 rounded-[var(--radius-button)] border border-border py-2.5 text-[15px] font-medium text-ink-soft transition-colors duration-200',
-                dayLoad === opt.value && 'border-primary bg-sage-soft text-primary',
+                dayLoad === opt.value && 'border-primary-text bg-sage-soft text-primary-text',
               )}
             >
               {opt.label}

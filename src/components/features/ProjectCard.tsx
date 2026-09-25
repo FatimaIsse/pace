@@ -24,7 +24,7 @@ export function ProjectCard({
 
   return (
     <Link to={`/projects/${project.id}`}>
-      <Card className="relative transition-colors duration-200 hover:border-primary">
+      <Card className="relative transition-colors duration-200 hover:border-primary-text">
         <div className="absolute right-3 top-3">
           <OverflowMenu items={menuItems} label={`More options for ${project.name}`} />
         </div>

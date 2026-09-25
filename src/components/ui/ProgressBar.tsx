@@ -21,7 +21,7 @@ export function StatusProgress({ status, className }: { status: ProjectStatus; c
       <div className="h-1.5 w-full overflow-hidden rounded-full bg-soft">
         <div
           className={cn(
-            'h-full rounded-full bg-primary transition-[width] duration-200',
+            'h-full rounded-full bg-primary-text transition-[width] duration-200',
             STATUS_FILL[status],
           )}
         />
@@ -36,7 +36,7 @@ export function ProgressBar({ value, className }: { value: number; className?: s
   return (
     <div className={cn('h-1.5 w-full overflow-hidden rounded-full bg-soft', className)}>
       <div
-        className="h-full rounded-full bg-primary transition-[width] duration-200"
+        className="h-full rounded-full bg-primary-text transition-[width] duration-200"
         style={{ width: `${clamped}%` }}
       />
     </div>

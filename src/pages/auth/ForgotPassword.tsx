@@ -30,7 +30,7 @@ export function ForgotPassword() {
       title="Reset your password."
       subtitle="We'll email you a link to get back in."
       footer={
-        <Link to="/login" className="font-medium text-primary">
+        <Link to="/login" className="font-medium text-primary-text">
           Back to sign in
         </Link>
       }

@@ -39,7 +39,7 @@ export function ChangeTop3Sheet({
             onClick={() => toggle(task.id)}
             className={cn(
               'flex items-center justify-between rounded-[var(--radius-button)] border border-border px-4 py-3 text-left transition-colors duration-200',
-              selected.includes(task.id) && 'border-primary bg-sage-soft',
+              selected.includes(task.id) && 'border-primary-text bg-sage-soft',
             )}
           >
             <span>
@@ -49,7 +49,7 @@ export function ChangeTop3Sheet({
             <span
               className={cn(
                 'h-5 w-5 shrink-0 rounded-full border-2 border-border',
-                selected.includes(task.id) && 'border-primary bg-primary',
+                selected.includes(task.id) && 'border-primary-text bg-primary-text',
               )}
             />
           </button>

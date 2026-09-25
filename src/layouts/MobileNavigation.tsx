@@ -12,7 +12,7 @@ export function MobileNavigation() {
       <button
         onClick={openSmartAdd}
         aria-label="Add"
-        className="fixed bottom-20 right-5 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg transition-colors duration-200 hover:bg-primary-hover md:hidden"
+        className="fixed bottom-20 right-5 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-on-primary shadow-lg transition-colors duration-200 hover:bg-primary-hover md:hidden"
       >
         <Plus size={26} strokeWidth={2.25} />
       </button>
@@ -25,7 +25,7 @@ export function MobileNavigation() {
             className={({ isActive }) =>
               cn(
                 'flex min-h-[56px] flex-1 flex-col items-center justify-center gap-1 py-2 text-[11px] font-medium text-ink-faint',
-                isActive && 'text-primary',
+                isActive && 'text-primary-text',
               )
             }
           >

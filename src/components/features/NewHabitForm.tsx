@@ -99,7 +99,7 @@ export function NewHabitForm({
               onClick={() => applyPreset(preset)}
               className={cn(
                 'rounded-full border border-border px-3.5 py-1.5 text-sm font-medium text-ink-soft transition-colors duration-200',
-                category === preset.label && 'border-primary bg-sage-soft text-primary',
+                category === preset.label && 'border-primary-text bg-sage-soft text-primary-text',
               )}
             >
               {preset.label}

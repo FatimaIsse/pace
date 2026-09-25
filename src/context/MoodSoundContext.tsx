@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
-import { getBrownNoiseDataUrl } from '@/utils/brownNoise'
+import { getNoiseDataUrl } from '@/utils/noiseGenerator'
 
-export type FocusSound = 'rain' | 'cafe' | 'waves' | 'brown_noise'
+export type FocusSound = 'rain' | 'cafe' | 'waves' | 'forest' | 'white_noise' | 'pink_noise' | 'brown_noise'
 
 interface SoundDef {
   label: string
@@ -13,12 +13,15 @@ const FADE_MS = 700
 const DEFAULT_VOLUME = 0.4
 
 // Every option is either a real, license-verified Wikimedia Commons
-// recording stored locally, or (brown noise) generated client-side — nothing
-// copyrighted or third-party-hosted.
+// recording stored locally, or (the three noise colors) generated
+// client-side — nothing copyrighted or third-party-hosted.
 export const FOCUS_SOUNDS: Record<FocusSound, SoundDef> = {
   rain: { label: 'Rain', credit: 'Effib', license: 'CC BY-SA 3.0' },
   cafe: { label: 'Cafe', credit: 'Stephan', license: 'Public domain' },
   waves: { label: 'Soft waves', credit: 'Dsw4', license: 'Public domain' },
+  forest: { label: 'Forest', credit: 'Stephan', license: 'Public domain' },
+  white_noise: { label: 'White noise', credit: 'Generated', license: 'No license needed' },
+  pink_noise: { label: 'Pink noise', credit: 'Generated', license: 'No license needed' },
   brown_noise: { label: 'Brown noise', credit: 'Generated', license: 'No license needed' },
 }
 
@@ -32,8 +35,14 @@ function soundSrc(sound: FocusSound): string {
       return '/sounds/cafe-1.ogg'
     case 'waves':
       return '/sounds/waves-1.ogg'
+    case 'forest':
+      return '/sounds/forest-1.ogg'
+    case 'white_noise':
+      return getNoiseDataUrl('white')
+    case 'pink_noise':
+      return getNoiseDataUrl('pink')
     case 'brown_noise':
-      return getBrownNoiseDataUrl()
+      return getNoiseDataUrl('brown')
   }
 }
 
