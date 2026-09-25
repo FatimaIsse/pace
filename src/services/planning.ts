@@ -33,6 +33,24 @@ export function calculateDailyCapacity(energy: EnergyLevel, dayLoad: DayLoad): D
   return { level: energy, dayLoad, availableMinutes, recommendedTaskCount }
 }
 
+// Applies the Preferences page's "Planning style" and "Daily capacity"
+// choices on top of the check-in-derived capacity — a real override, not a
+// cosmetic label, since it feeds directly into scoreTask/generateDailyPlan
+// wherever capacity is computed.
+export function applyCapacityPreferences(
+  energy: EnergyLevel,
+  dayLoad: DayLoad,
+  prefs: { planningStyle?: 'gentle' | 'structured'; dailyCapacityPref?: DayLoad | 'auto' },
+): DailyCapacity {
+  const effectiveDayLoad =
+    !prefs.dailyCapacityPref || prefs.dailyCapacityPref === 'auto' ? dayLoad : prefs.dailyCapacityPref
+  const capacity = calculateDailyCapacity(energy, effectiveDayLoad)
+  if (prefs.planningStyle === 'gentle') {
+    return { ...capacity, recommendedTaskCount: Math.max(1, capacity.recommendedTaskCount - 1) }
+  }
+  return capacity
+}
+
 // ---------------------------------------------------------------------------
 // Choosing what matters next
 // ---------------------------------------------------------------------------
@@ -74,6 +92,21 @@ export function chooseNextTask(tasks: Task[], capacity: DailyCapacity): Task | n
   return ranked[0] ?? null
 }
 
+// Picks the smallest useful next step for one project — "Help me move this
+// forward" reuses the same scoring chooseNextTask already does, just scoped
+// to that project's tasks, and falls back to inventing a first step via
+// breakDownTask when the project has nothing active yet.
+export function pickNextProjectStep(
+  projectTasks: Task[],
+  projectName: string,
+  capacity: DailyCapacity,
+): { task: Task } | { newStep: BreakdownStep } {
+  const existing = chooseNextTask(projectTasks, capacity)
+  // chooseNextTask only returns null when there's no active task at all —
+  // in that case invent a small first step instead of leaving the project blank.
+  return existing ? { task: existing } : { newStep: firstStepOnly(projectName, 20) }
+}
+
 export function explainTaskChoice(task: Task): string {
   const reasons: string[] = []
 
@@ -111,10 +144,55 @@ export function replanDay(tasks: Task[], capacity: DailyCapacity): DailyPlan {
 }
 
 // ---------------------------------------------------------------------------
+// Make it realistic — "does today actually fit?"
+// ---------------------------------------------------------------------------
+
+const HEAVY_DAY_SLACK = 1.15 // 15% over capacity before we call a day "heavy"
+
+export function isDayHeavy(tasks: Task[], capacity: DailyCapacity): boolean {
+  const scheduled = tasks.filter((t) => t.status === 'active')
+  const totalMinutes = scheduled.reduce((sum, t) => sum + t.duration, 0)
+  return totalMinutes > capacity.availableMinutes * HEAVY_DAY_SLACK
+}
+
+export interface RealisticPlan {
+  kept: Task[]
+  moved: Task[]
+}
+
+// Keeps fixed events and anything already flagged important, moves the
+// lowest-scoring flexible work out of today until the rest actually fits —
+// this is what "Make it realistic" and the real "Plans changed?" replan both
+// call, instead of the old approach of just re-submitting the check-in and
+// hoping generateDailyPlan's cap quietly trimmed enough.
+export function makeRealistic(tasks: Task[], capacity: DailyCapacity): RealisticPlan {
+  const scheduled = tasks.filter((t) => t.status === 'active')
+  const protectedTasks = scheduled.filter((t) => t.timing === 'fixed' || t.isTop3 || t.priority === 'high')
+  const flexible = scheduled.filter((t) => !protectedTasks.includes(t))
+
+  const rankedFlexible = [...flexible].sort((a, b) => scoreTask(b, capacity) - scoreTask(a, capacity))
+
+  const kept: Task[] = [...protectedTasks]
+  const moved: Task[] = []
+  let usedMinutes = protectedTasks.reduce((sum, t) => sum + t.duration, 0)
+
+  for (const task of rankedFlexible) {
+    if (usedMinutes + task.duration <= capacity.availableMinutes) {
+      kept.push(task)
+      usedMinutes += task.duration
+    } else {
+      moved.push(task)
+    }
+  }
+
+  return { kept, moved }
+}
+
+// ---------------------------------------------------------------------------
 // Break it down
 // ---------------------------------------------------------------------------
 
-interface BreakdownStep {
+export interface BreakdownStep {
   title: string
   duration: number
 }
@@ -277,7 +355,9 @@ const REMINDER_HINTS = /\b(remember|don't forget|next week|later)\b/i
 const GOAL_HINTS = /\b(want to|wanna|hope to|goal|eventually|someday|become)\b/i
 const PROJECT_HINTS = /\b(project|plan|organize|move|moving|launch|build)\b/i
 
-function classifyFragment(fragment: string): BrainDumpItem['type'] {
+// Exported as `classifyEntry` too — Smart Add runs this same rule set on one
+// freeform entry rather than a second, parallel classifier.
+export function classifyFragment(fragment: string): BrainDumpItem['type'] {
   if (HABIT_HINTS.test(fragment)) return 'habit'
   if (REMINDER_HINTS.test(fragment)) return 'reminder'
   if (GOAL_HINTS.test(fragment)) return 'goal'
@@ -286,7 +366,20 @@ function classifyFragment(fragment: string): BrainDumpItem['type'] {
   return 'unclear'
 }
 
-function estimateDuration(fragment: string): number | undefined {
+export const classifyEntry = classifyFragment
+
+// Deliberately narrow and conservative — only fires on an explicit
+// already-done phrase, and only ever prompts a confirmation, never silently
+// completes anything. Habit/goal-classified text is excluded on purpose:
+// "I finished my run" said about a Habit plausibly means "log today's
+// session," a different action from marking a one-off task complete.
+const ALREADY_DONE_HINTS = /\b(finished|done|completed|already did|just did|wrapped up|took care of)\b/i
+
+export function looksAlreadyDone(text: string): boolean {
+  return ALREADY_DONE_HINTS.test(text)
+}
+
+export function estimateDuration(fragment: string): number | undefined {
   const explicit = fragment.match(/(\d+)\s*(min|minute|hr|hour)/i)
   if (explicit) {
     const num = Number(explicit[1])

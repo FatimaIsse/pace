@@ -160,6 +160,7 @@ export async function seedDemoData(uid: string) {
       { label: 'plank', value: '10 sec plank' },
       { label: 'run', value: '2 min movement' },
     ],
+    goalId: null,
     createdAt: now,
     archivedAt: null,
   } satisfies Omit<Habit, 'id'>)

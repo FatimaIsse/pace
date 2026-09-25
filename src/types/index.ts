@@ -23,6 +23,7 @@ export interface UserProfile {
   lifeContext?: string // free text from onboarding brain dump
   photoURL?: string | null
   bio?: string // short tagline shown under the name on Me, e.g. "Progress over perfection."
+  lastActiveAt?: string | null // ISO timestamp, used to trigger Recovery Mode after inactivity
 }
 
 export interface Preferences {
@@ -58,7 +59,7 @@ export interface Task {
   lastSkippedAt: string | null
   createdAt: string
   completedAt: string | null
-  source: 'manual' | 'brain_dump' | 'breakdown'
+  source: 'manual' | 'brain_dump' | 'breakdown' | 'goal_auto'
 }
 
 export type ProjectStatus = 'just_started' | 'making_progress' | 'almost_there' | 'done'
@@ -82,6 +83,8 @@ export interface Habit {
   name: string
   goalVersion: HabitTarget[]
   minimumVersion: HabitTarget[]
+  startingGoalVersion?: HabitTarget[] // snapshot of goalVersion at creation, for "Started X, now Y"
+  goalId: string | null // links this habit to the Goal it's the daily action for
   createdAt: string
   archivedAt: string | null
 }

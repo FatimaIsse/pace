@@ -6,9 +6,17 @@ interface UIContextValue {
   openBrainDump: () => void
   closeBrainDump: () => void
 
+  smartAddOpen: boolean
+  openSmartAdd: () => void
+  closeSmartAdd: () => void
+
   overwhelmedOpen: boolean
   openOverwhelmed: () => void
   closeOverwhelmed: () => void
+
+  recoveryOpen: boolean
+  openRecovery: () => void
+  closeRecovery: () => void
 
   focusTask: Task | null
   startFocus: (task: Task) => void
@@ -19,7 +27,9 @@ const UIContext = createContext<UIContextValue | undefined>(undefined)
 
 export function UIProvider({ children }: { children: ReactNode }) {
   const [brainDumpOpen, setBrainDumpOpen] = useState(false)
+  const [smartAddOpen, setSmartAddOpen] = useState(false)
   const [overwhelmedOpen, setOverwhelmedOpen] = useState(false)
+  const [recoveryOpen, setRecoveryOpen] = useState(false)
   const [focusTask, setFocusTask] = useState<Task | null>(null)
 
   return (
@@ -28,9 +38,15 @@ export function UIProvider({ children }: { children: ReactNode }) {
         brainDumpOpen,
         openBrainDump: () => setBrainDumpOpen(true),
         closeBrainDump: () => setBrainDumpOpen(false),
+        smartAddOpen,
+        openSmartAdd: () => setSmartAddOpen(true),
+        closeSmartAdd: () => setSmartAddOpen(false),
         overwhelmedOpen,
         openOverwhelmed: () => setOverwhelmedOpen(true),
         closeOverwhelmed: () => setOverwhelmedOpen(false),
+        recoveryOpen,
+        openRecovery: () => setRecoveryOpen(true),
+        closeRecovery: () => setRecoveryOpen(false),
         focusTask,
         startFocus: (task) => setFocusTask(task),
         stopFocus: () => setFocusTask(null),

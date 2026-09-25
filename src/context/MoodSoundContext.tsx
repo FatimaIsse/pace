@@ -1,165 +1,85 @@
-import { createContext, useContext, useRef, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import { getBrownNoiseDataUrl } from '@/utils/brownNoise'
 
-export type Mood = 'calm' | 'focus' | 'energetic' | 'rain' | 'uplifting' | 'nature'
+export type FocusSound = 'rain' | 'cafe' | 'waves' | 'brown_noise'
 
-export interface Track {
-  id: string
-  title: string
-  src: string
-  volume: number
+interface SoundDef {
+  label: string
   credit: string
   license: string
 }
 
 const FADE_MS = 700
+const DEFAULT_VOLUME = 0.4
 
-// Real, properly-licensed tracks from Wikimedia Commons — not stock/AI audio,
-// each one traceable to a real author and license. All require attribution
-// where their license calls for it (shown in the picker), none require the
-// app itself to be relicensed.
-export const MOOD_TRACKS: Record<Mood, { label: string; tracks: Track[] }> = {
-  calm: {
-    label: 'Calm',
-    tracks: [
-      {
-        id: 'calm-1',
-        title: 'Peaceful',
-        src: '/sounds/calm-1.ogg',
-        volume: 0.35,
-        credit: 'Tamlin Lollis Love',
-        license: 'CC BY-SA 3.0',
-      },
-      {
-        id: 'calm-2',
-        title: 'Memory',
-        src: '/sounds/calm-2.ogg',
-        volume: 0.35,
-        credit: 'Oleg Mazur',
-        license: 'CC BY 3.0',
-      },
-    ],
-  },
-  focus: {
-    label: 'Focus',
-    tracks: [
-      {
-        id: 'focus-1',
-        title: 'Lo-fi',
-        src: '/sounds/focus-1.mp3',
-        volume: 0.3,
-        credit: 'PetroVenus',
-        license: 'CC BY-SA 3.0',
-      },
-      {
-        id: 'focus-2',
-        title: 'H',
-        src: '/sounds/focus-2.ogg',
-        volume: 0.3,
-        credit: 'Nctrnm',
-        license: 'CC BY 4.0',
-      },
-    ],
-  },
-  energetic: {
-    label: 'Energetic',
-    tracks: [
-      {
-        id: 'energetic-1',
-        title: 'Dubstep Loop',
-        src: '/sounds/energetic-1.ogg',
-        volume: 0.35,
-        credit: 'WinnieTheMoog',
-        license: 'CC BY 4.0',
-      },
-      {
-        id: 'energetic-2',
-        title: 'Trance D Base Dance',
-        src: '/sounds/energetic-2.ogg',
-        volume: 0.3,
-        credit: 'Frank Nora',
-        license: 'CC0',
-      },
-    ],
-  },
-  rain: {
-    label: 'Rain',
-    tracks: [
-      {
-        id: 'rain-1',
-        title: 'Sound of Rain',
-        src: '/sounds/rain-1.ogg',
-        volume: 0.5,
-        credit: 'Effib',
-        license: 'CC BY-SA 3.0',
-      },
-      {
-        id: 'rain-2',
-        title: 'Rain Against the Window',
-        src: '/sounds/rain-2.ogg',
-        volume: 0.5,
-        credit: 'Cori Samuel',
-        license: 'Public domain',
-      },
-    ],
-  },
-  uplifting: {
-    label: 'Uplifting',
-    tracks: [
-      {
-        id: 'uplifting-1',
-        title: 'Happy Moment',
-        src: '/sounds/uplifting-1.ogg',
-        volume: 0.3,
-        credit: 'HolFix',
-        license: 'CC BY-SA 3.0',
-      },
-      {
-        id: 'uplifting-2',
-        title: 'Good Feeling',
-        src: '/sounds/uplifting-2.ogg',
-        volume: 0.35,
-        credit: 'Scott Holmes',
-        license: 'CC BY 4.0',
-      },
-    ],
-  },
-  nature: {
-    label: 'Nature',
-    tracks: [
-      {
-        id: 'nature-1',
-        title: 'Forest Birds',
-        src: '/sounds/nature-1.ogg',
-        volume: 0.45,
-        credit: 'Barracuda1983',
-        license: 'Public domain',
-      },
-      {
-        id: 'nature-2',
-        title: 'Birdsong, Sunny Day',
-        src: '/sounds/nature-2.ogg',
-        volume: 0.45,
-        credit: 'Stephan',
-        license: 'Public domain',
-      },
-    ],
-  },
+// Every option is either a real, license-verified Wikimedia Commons
+// recording stored locally, or (brown noise) generated client-side — nothing
+// copyrighted or third-party-hosted.
+export const FOCUS_SOUNDS: Record<FocusSound, SoundDef> = {
+  rain: { label: 'Rain', credit: 'Effib', license: 'CC BY-SA 3.0' },
+  cafe: { label: 'Cafe', credit: 'Stephan', license: 'Public domain' },
+  waves: { label: 'Soft waves', credit: 'Dsw4', license: 'Public domain' },
+  brown_noise: { label: 'Brown noise', credit: 'Generated', license: 'No license needed' },
 }
 
-export const MOODS = Object.keys(MOOD_TRACKS) as Mood[]
+export const FOCUS_SOUND_OPTIONS = Object.keys(FOCUS_SOUNDS) as FocusSound[]
+
+function soundSrc(sound: FocusSound): string {
+  switch (sound) {
+    case 'rain':
+      return '/sounds/rain-1.ogg'
+    case 'cafe':
+      return '/sounds/cafe-1.ogg'
+    case 'waves':
+      return '/sounds/waves-1.ogg'
+    case 'brown_noise':
+      return getBrownNoiseDataUrl()
+  }
+}
+
+const VOLUME_KEY = 'pace-focus-sound-volume'
+const USE_DURING_FOCUS_KEY = 'pace-focus-sound-use-during-focus'
+const PREFERRED_SOUND_KEY = 'pace-focus-sound-preferred'
 
 interface MoodSoundContextValue {
-  mood: Mood | null
-  trackId: string | null
-  play: (mood: Mood, trackId: string) => void
+  sound: FocusSound | null
+  preferredSound: FocusSound
+  volume: number
+  setVolume: (value: number) => void
+  useDuringFocus: boolean
+  setUseDuringFocus: (value: boolean) => void
+  play: (sound: FocusSound) => void
   stop: () => void
 }
 
 const MoodSoundContext = createContext<MoodSoundContextValue | undefined>(undefined)
 
 export function MoodSoundProvider({ children }: { children: ReactNode }) {
-  const [mood, setMoodState] = useState<Mood | null>(null)
-  const [trackId, setTrackId] = useState<string | null>(null)
+  const [sound, setSoundState] = useState<FocusSound | null>(null)
+  const [preferredSound, setPreferredSound] = useState<FocusSound>(() => {
+    try {
+      const saved = localStorage.getItem(PREFERRED_SOUND_KEY)
+      return (saved as FocusSound | null) ?? 'rain'
+    } catch {
+      return 'rain'
+    }
+  })
+  const [volume, setVolumeState] = useState(() => {
+    try {
+      const saved = localStorage.getItem(VOLUME_KEY)
+      return saved ? Number(saved) : DEFAULT_VOLUME
+    } catch {
+      return DEFAULT_VOLUME
+    }
+  })
+  const [useDuringFocus, setUseDuringFocusState] = useState(() => {
+    try {
+      return localStorage.getItem(USE_DURING_FOCUS_KEY) === 'true'
+    } catch {
+      return false
+    }
+  })
+
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const fadeTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -170,11 +90,9 @@ export function MoodSoundProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Runs on its own timer, independent of fadeTimerRef — that ref is reused
-  // for the *next* track's fade-in, and sharing one timer between "fade the
-  // old track out" and "fade the new one in" meant starting a new track
-  // cancelled the old track's fade-out before it ever reached pause(),
-  // leaving it playing forever underneath the new one.
+  // Independent of fadeTimerRef, which the next track's fade-in reuses —
+  // sharing one timer between "fade the old track out" and "fade the new one
+  // in" would cancel the old fade-out before it ever reached pause().
   function fadeOutAndStop(audio: HTMLAudioElement) {
     const startVolume = audio.volume
     const steps = 12
@@ -193,23 +111,19 @@ export function MoodSoundProvider({ children }: { children: ReactNode }) {
     const current = audioRef.current
     if (current) fadeOutAndStop(current)
     audioRef.current = null
-    setMoodState(null)
-    setTrackId(null)
+    setSoundState(null)
   }
 
-  function play(nextMood: Mood, nextTrackId: string) {
-    const track = MOOD_TRACKS[nextMood].tracks.find((t) => t.id === nextTrackId)
-    if (!track) return
-
+  function play(next: FocusSound) {
     const current = audioRef.current
     if (current) fadeOutAndStop(current)
 
-    const audio = new Audio(track.src)
+    const audio = new Audio(soundSrc(next))
     audio.loop = true
     audio.volume = 0
     audio.play().catch(() => {
       // Autoplay can be blocked before any user gesture — the click that
-      // opened this picker counts as one, so this is just a safety net.
+      // triggered this counts as one, so this is just a safety net.
     })
 
     clearFade()
@@ -217,16 +131,53 @@ export function MoodSoundProvider({ children }: { children: ReactNode }) {
     let step = 0
     fadeTimerRef.current = setInterval(() => {
       step += 1
-      audio.volume = Math.min(track.volume, (track.volume * step) / steps)
+      audio.volume = Math.min(volume, (volume * step) / steps)
       if (step >= steps) clearFade()
     }, FADE_MS / steps)
 
     audioRef.current = audio
-    setMoodState(nextMood)
-    setTrackId(nextTrackId)
+    setSoundState(next)
+    setPreferredSound(next)
+    try {
+      localStorage.setItem(PREFERRED_SOUND_KEY, next)
+    } catch {
+      // best-effort
+    }
   }
 
-  return <MoodSoundContext.Provider value={{ mood, trackId, play, stop }}>{children}</MoodSoundContext.Provider>
+  // Live volume changes apply immediately to whatever's currently playing,
+  // without restarting the fade-in.
+  useEffect(() => {
+    if (audioRef.current && !fadeTimerRef.current) {
+      audioRef.current.volume = volume
+    }
+  }, [volume])
+
+  function setVolume(value: number) {
+    setVolumeState(value)
+    try {
+      localStorage.setItem(VOLUME_KEY, String(value))
+    } catch {
+      // best-effort; a blocked/private-mode localStorage just won't persist
+    }
+  }
+
+  function setUseDuringFocus(value: boolean) {
+    setUseDuringFocusState(value)
+    try {
+      localStorage.setItem(USE_DURING_FOCUS_KEY, String(value))
+    } catch {
+      // best-effort
+    }
+  }
+
+  return (
+    <MoodSoundContext.Provider
+      value={{ sound, preferredSound, volume, setVolume, useDuringFocus, setUseDuringFocus, play, stop }}
+    >
+      {children}
+    </MoodSoundContext.Provider>
+  )
 }
 
 export function useMoodSound() {

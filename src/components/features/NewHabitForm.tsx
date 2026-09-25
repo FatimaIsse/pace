@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/utils/cn'
-import type { Habit } from '@/types'
+import type { Goal, Habit } from '@/types'
 
 interface Row {
   label: string
@@ -41,18 +41,26 @@ const CATEGORY_PRESETS: { label: string; part: string; goal: string; minimum: st
 export function NewHabitForm({
   initial,
   initialName,
+  goals = [],
   onSave,
   onCancel,
 }: {
   initial?: Habit
   initialName?: string
-  onSave: (name: string, goal: { label: string; value: string }[], minimum: { label: string; value: string }[]) => void
+  goals?: Goal[]
+  onSave: (
+    name: string,
+    goal: { label: string; value: string }[],
+    minimum: { label: string; value: string }[],
+    goalId: string | null,
+  ) => void
   onCancel: () => void
 }) {
   const isEditing = Boolean(initial)
   const [name, setName] = useState(initial?.name ?? initialName ?? '')
   const [rows, setRows] = useState<Row[]>(initial ? rowsFromHabit(initial) : [emptyRow()])
   const [category, setCategory] = useState<string | null>(null)
+  const [goalId, setGoalId] = useState(initial?.goalId ?? '')
 
   function updateRow(index: number, patch: Partial<Row>) {
     setRows((prev) => prev.map((r, i) => (i === index ? { ...r, ...patch } : r)))
@@ -74,6 +82,7 @@ export function NewHabitForm({
       name.trim(),
       validRows.map((r) => ({ label: r.label.trim(), value: r.goal.trim() })),
       validRows.map((r) => ({ label: r.label.trim(), value: r.minimum.trim() })),
+      goalId || null,
     )
   }
 
@@ -137,6 +146,24 @@ export function NewHabitForm({
           <Plus size={16} /> Add another part
         </button>
       </div>
+
+      {goals.length > 0 && (
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-ink">Link to a goal (optional)</label>
+          <select
+            value={goalId}
+            onChange={(e) => setGoalId(e.target.value)}
+            className="h-12 w-full rounded-[var(--radius-button)] border border-border bg-surface px-4 text-[15px] text-ink"
+          >
+            <option value="">No goal</option>
+            {goals.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.title}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="flex gap-2">
         <Button variant="secondary" className="flex-1" onClick={onCancel}>

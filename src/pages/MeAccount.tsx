@@ -117,7 +117,7 @@ export function MeAccount() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-[700px] flex-col gap-6">
       <button
         onClick={() => navigate('/me')}
         className="flex items-center gap-1.5 text-sm font-medium text-ink-faint hover:text-ink-soft"

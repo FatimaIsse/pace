@@ -1,11 +1,17 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ChevronRight, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useProjects } from '@/hooks/useProjects'
 import { useTasks } from '@/hooks/useTasks'
+import { useCheckIn } from '@/hooks/useCheckIn'
+import { useUI } from '@/context/UIContext'
+import { usePreferences } from '@/context/PreferencesContext'
+import { applyCapacityPreferences, pickNextProjectStep } from '@/services/planning'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { OverflowMenu } from '@/components/ui/OverflowMenu'
+import { PrimaryTaskCard } from '@/components/features/PrimaryTaskCard'
 import { TaskCard } from '@/components/features/TaskCard'
 import { QuickAddTask } from '@/components/features/QuickAddTask'
 import type { ProjectStatus, Task } from '@/types'
@@ -22,11 +28,16 @@ export function ProjectDetail() {
   const { projectId } = useParams()
   const navigate = useNavigate()
   const { projects, updateProject, updateProjectStatus, removeProject } = useProjects()
-  const { tasks, completeTask, uncompleteTask, skipTask, removeTask } = useTasks()
+  const { tasks, addTask, completeTask, uncompleteTask, skipTask, updateTask, removeTask } = useTasks()
+  const { todayCheckIn } = useCheckIn()
+  const { startFocus } = useUI()
+  const { planningStyle, dailyCapacityPref } = usePreferences()
   const [addOpen, setAddOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [editingName, setEditingName] = useState(false)
   const [nameInput, setNameInput] = useState('')
+  const [showAll, setShowAll] = useState(false)
+  const [creatingStep, setCreatingStep] = useState(false)
 
   const project = projects.find((p) => p.id === projectId)
   const projectTasks = tasks.filter((t) => t.projectId === projectId && t.status === 'active')
@@ -38,6 +49,27 @@ export function ProjectDetail() {
     return <EmptyState title="Project not found." />
   }
 
+  const capacity = applyCapacityPreferences(todayCheckIn?.energy ?? 'okay', todayCheckIn?.dayLoad ?? 'normal', {
+    planningStyle,
+    dailyCapacityPref,
+  })
+  const suggestion = pickNextProjectStep(projectTasks, project.name, capacity)
+  const nextStepTask = 'task' in suggestion ? suggestion.task : null
+  const remaining = projectTasks.filter((t) => t.id !== nextStepTask?.id)
+
+  async function handleMoveForward() {
+    if (nextStepTask) return // already have a real next step, nothing to create
+    if (!('newStep' in suggestion)) return
+    setCreatingStep(true)
+    await addTask({
+      title: suggestion.newStep.title,
+      duration: suggestion.newStep.duration,
+      projectId: project!.id,
+      source: 'breakdown',
+    })
+    setCreatingStep(false)
+  }
+
   function handleDeleteProject() {
     if (!project) return
     if (window.confirm(`Delete "${project.name}"? This can't be undone.`)) {
@@ -47,7 +79,7 @@ export function ProjectDetail() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-[880px] flex-col gap-6">
       <button
         onClick={() => navigate('/projects')}
         className="flex items-center gap-1.5 text-sm font-medium text-ink-faint hover:text-ink-soft"
@@ -89,13 +121,20 @@ export function ProjectDetail() {
               <h1 className="text-[28px] font-bold text-ink sm:text-[32px]">{project.name}</h1>
               <Pencil size={16} className="text-ink-faint opacity-0 transition-opacity group-hover:opacity-100" />
             </button>
-            <button
-              onClick={handleDeleteProject}
-              aria-label={`Delete ${project.name}`}
-              className="flex h-8 w-8 items-center justify-center rounded-full text-ink-faint hover:bg-soft hover:text-error"
-            >
-              <Trash2 size={16} />
-            </button>
+            <OverflowMenu
+              label={`More options for ${project.name}`}
+              items={[
+                {
+                  label: 'Rename',
+                  icon: <Pencil size={15} />,
+                  onClick: () => {
+                    setNameInput(project.name)
+                    setEditingName(true)
+                  },
+                },
+                { label: 'Delete', icon: <Trash2 size={15} />, onClick: handleDeleteProject, variant: 'danger' },
+              ]}
+            />
           </div>
         )}
         <div className="mt-3 flex flex-wrap gap-2">
@@ -114,20 +153,57 @@ export function ProjectDetail() {
         </div>
       </div>
 
-      {projectTasks.length === 0 ? (
-        <EmptyState title="No tasks yet." subtitle="Add the first task for this project." />
+      {nextStepTask ? (
+        <PrimaryTaskCard
+          task={nextStepTask}
+          eyebrow="Next step"
+          onStart={() => startFocus(nextStepTask)}
+          onSkip={() => skipTask(nextStepTask.id, 'not_today')}
+          onEdit={() => setEditingTask(nextStepTask)}
+          onMove={() => updateTask(nextStepTask.id, { scheduledFor: null })}
+          onRemove={() => removeTask(nextStepTask.id)}
+        />
       ) : (
+        <EmptyState
+          title="No tasks yet."
+          subtitle="Add the first task for this project, or let Pace suggest a small one."
+        />
+      )}
+
+      {!nextStepTask && 'newStep' in suggestion && (
+        <button
+          onClick={handleMoveForward}
+          disabled={creatingStep}
+          className="self-start text-sm font-medium text-primary hover:underline"
+        >
+          Help me move this forward — {suggestion.newStep.title} ({suggestion.newStep.duration} min)
+        </button>
+      )}
+
+      {remaining.length > 0 && (
         <div className="flex flex-col gap-2">
-          {projectTasks.map((task) => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              onComplete={() => completeTask(task.id)}
-              onSkip={() => skipTask(task.id, 'not_today')}
-              onClick={() => setEditingTask(task)}
-              onRemove={() => removeTask(task.id)}
-            />
-          ))}
+          <button
+            onClick={() => setShowAll((v) => !v)}
+            className="flex items-center gap-1 self-start text-sm font-medium text-ink-faint hover:text-ink-soft"
+          >
+            {remaining.length} thing{remaining.length === 1 ? '' : 's'} waiting quietly
+            {showAll ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+          </button>
+          {showAll && (
+            <div className="animate-card-in flex flex-col gap-2">
+              {remaining.map((task) => (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  onComplete={() => completeTask(task.id)}
+                  onSkip={() => skipTask(task.id, 'not_today')}
+                  onClick={() => setEditingTask(task)}
+                  onMove={() => updateTask(task.id, { scheduledFor: null })}
+                  onRemove={() => removeTask(task.id)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -142,7 +218,13 @@ export function ProjectDetail() {
         <div className="flex flex-col gap-2">
           <h2 className="text-[15px] font-semibold text-ink-soft">Completed ({completedTasks.length})</h2>
           {completedTasks.map((task) => (
-            <TaskCard key={task.id} task={task} completed onComplete={() => uncompleteTask(task.id)} />
+            <TaskCard
+              key={task.id}
+              task={task}
+              completed
+              onComplete={() => uncompleteTask(task.id)}
+              onRemove={() => removeTask(task.id)}
+            />
           ))}
         </div>
       )}

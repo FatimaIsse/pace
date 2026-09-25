@@ -48,12 +48,22 @@ export function Projects() {
     setInboxPrefill(null)
   }
 
+  const isEmpty = activeProjects.length === 0 && !creating
+
   return (
-    <div className="flex flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-[880px] flex-col gap-6">
       <h1 className="text-[28px] font-bold text-ink sm:text-[32px]">Projects</h1>
 
-      {activeProjects.length === 0 && !creating && (
-        <EmptyState title="No projects yet." subtitle="Group related tasks under one place." />
+      {isEmpty && (
+        <EmptyState
+          title="No projects yet"
+          subtitle="Projects are for things that take more than one step — like moving, a portfolio, or planning a trip."
+          action={
+            <Button size="sm" onClick={() => setCreating(true)}>
+              Create your first project
+            </Button>
+          }
+        />
       )}
 
       <div className="flex flex-col gap-3">
@@ -80,12 +90,14 @@ export function Projects() {
           </div>
         </Card>
       ) : (
-        <button
-          onClick={() => setCreating(true)}
-          className="flex items-center justify-center gap-2 rounded-[var(--radius-card)] border border-dashed border-border py-3.5 text-[15px] font-medium text-ink-faint hover:text-ink-soft"
-        >
-          <Plus size={18} /> Add a project
-        </button>
+        activeProjects.length > 0 && (
+          <button
+            onClick={() => setCreating(true)}
+            className="flex items-center justify-center gap-2 rounded-[var(--radius-card)] border border-dashed border-border py-3.5 text-[15px] font-medium text-ink-faint hover:text-ink-soft"
+          >
+            <Plus size={18} /> Add a project
+          </button>
+        )
       )}
     </div>
   )

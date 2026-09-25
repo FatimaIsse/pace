@@ -1,19 +1,26 @@
 import { useState } from 'react'
-import { Clock, List, Trash2 } from 'lucide-react'
+import { Clock, List } from 'lucide-react'
 import { useTasks } from '@/hooks/useTasks'
 import { useHabits } from '@/hooks/useHabits'
+import { useCheckIn } from '@/hooks/useCheckIn'
+import { usePreferences } from '@/context/PreferencesContext'
+import { applyCapacityPreferences, isDayHeavy, makeRealistic } from '@/services/planning'
 import { isToday, todayISO } from '@/utils/date'
 import { cn } from '@/utils/cn'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { Button } from '@/components/ui/Button'
 import { TaskCard } from '@/components/features/TaskCard'
-import type { Task } from '@/types'
 
 type ViewMode = 'simple' | 'timeline'
 
 export function DayPlan() {
-  const { tasks, completeTask, uncompleteTask, removeTask } = useTasks()
+  const { tasks, completeTask, uncompleteTask, updateTask, removeTask } = useTasks()
   const { habits, hasSessionToday } = useHabits()
+  const { todayCheckIn } = useCheckIn()
+  const { planningStyle, dailyCapacityPref, gentleReminders } = usePreferences()
   const [mode, setMode] = useState<ViewMode>('simple')
+  const [madeLighter, setMadeLighter] = useState<{ kept: number; moved: string[] } | null>(null)
+  const [undoMap, setUndoMap] = useState<Map<string, string | null>>(new Map())
 
   const todaysTasks = tasks.filter((t) => t.status === 'active' && t.scheduledFor === todayISO())
   const fixed = todaysTasks
@@ -27,72 +34,117 @@ export function DayPlan() {
 
   const isEmpty = fixed.length === 0 && flexible.length === 0 && pendingHabits.length === 0 && completedToday.length === 0
 
-  function handleRemove(task: Task) {
-    if (window.confirm(`Delete "${task.title}"? This can't be undone.`)) removeTask(task.id)
+  const capacity = applyCapacityPreferences(todayCheckIn?.energy ?? 'okay', todayCheckIn?.dayLoad ?? 'normal', {
+    planningStyle,
+    dailyCapacityPref,
+  })
+  const heavy = gentleReminders && isDayHeavy(todaysTasks, capacity) && !madeLighter
+
+  function handleMoveTask(task: { id: string; scheduledFor: string | null }) {
+    updateTask(task.id, { scheduledFor: null })
+  }
+
+  async function handleMakeRealistic() {
+    const { kept, moved } = makeRealistic(todaysTasks, capacity)
+    const map = new Map(moved.map((t) => [t.id, t.scheduledFor]))
+    for (const task of moved) {
+      await updateTask(task.id, { scheduledFor: null })
+    }
+    setUndoMap(map)
+    setMadeLighter({ kept: kept.length, moved: moved.map((t) => t.title) })
+  }
+
+  function handleUndo() {
+    for (const [id, scheduledFor] of undoMap) {
+      updateTask(id, { scheduledFor })
+    }
+    setUndoMap(new Map())
+    setMadeLighter(null)
   }
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex justify-end gap-1">
-        <button
-          onClick={() => setMode('simple')}
-          aria-pressed={mode === 'simple'}
-          className={cn('flex h-9 w-9 items-center justify-center rounded-[var(--radius-button)] text-ink-faint', mode === 'simple' && 'bg-sage-soft text-primary')}
-          aria-label="Simple view"
-        >
-          <List size={18} />
-        </button>
-        <button
-          onClick={() => setMode('timeline')}
-          aria-pressed={mode === 'timeline'}
-          className={cn('flex h-9 w-9 items-center justify-center rounded-[var(--radius-button)] text-ink-faint', mode === 'timeline' && 'bg-sage-soft text-primary')}
-          aria-label="Timeline view"
-        >
-          <Clock size={18} />
-        </button>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm text-ink-faint">
+          {fixed.length} fixed · {flexible.length} flexible
+          {pendingHabits.length > 0 && ` · ${pendingHabits.length} habit${pendingHabits.length === 1 ? '' : 's'}`}
+          {' · '}
+          {capacity.availableMinutes} min available
+        </p>
+        <div className="flex gap-1">
+          <button
+            onClick={() => setMode('simple')}
+            aria-pressed={mode === 'simple'}
+            className={cn('flex h-9 w-9 items-center justify-center rounded-[var(--radius-button)] text-ink-faint', mode === 'simple' && 'bg-sage-soft text-primary')}
+            aria-label="Simple view"
+          >
+            <List size={18} />
+          </button>
+          <button
+            onClick={() => setMode('timeline')}
+            aria-pressed={mode === 'timeline'}
+            className={cn('flex h-9 w-9 items-center justify-center rounded-[var(--radius-button)] text-ink-faint', mode === 'timeline' && 'bg-sage-soft text-primary')}
+            aria-label="Timeline view"
+          >
+            <Clock size={18} />
+          </button>
+        </div>
       </div>
+
+      {heavy && (
+        <div className="flex items-center justify-between gap-3 rounded-[var(--radius-card)] border border-border bg-soft px-4 py-3">
+          <p className="text-[15px] font-medium text-ink">This looks a little heavy.</p>
+          <Button size="sm" variant="secondary" onClick={handleMakeRealistic}>
+            Make it realistic
+          </Button>
+        </div>
+      )}
+
+      {madeLighter && (
+        <div className="animate-card-in flex flex-col gap-2 rounded-[var(--radius-card)] border border-border bg-soft p-4">
+          <p className="text-[15px] font-medium text-ink">I made today lighter.</p>
+          <p className="text-sm text-ink-soft">
+            Kept {madeLighter.kept}
+            {madeLighter.moved.length > 0 && ` · Moved ${madeLighter.moved.length}`}
+          </p>
+          {madeLighter.moved.length > 0 && (
+            <p className="text-sm text-ink-faint">{madeLighter.moved.join(' · ')}</p>
+          )}
+          <Button size="sm" variant="ghost" className="self-start" onClick={handleUndo}>
+            Undo
+          </Button>
+        </div>
+      )}
 
       {isEmpty && <EmptyState title="Nothing planned yet." subtitle="Add a task from Today to get started." />}
 
       {!isEmpty && mode === 'simple' && (
-        <ol className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2">
           {fixed.map((task) => (
-            <li key={task.id} className="group flex items-center gap-4 rounded-[var(--radius-card)] border border-border bg-surface px-4 py-3.5">
-              <span className="w-14 shrink-0 text-sm font-semibold text-ink-soft">{task.scheduledTime}</span>
-              <button onClick={() => completeTask(task.id)} className="flex-1 text-left text-[15px] font-medium text-ink">
-                {task.title}
-              </button>
-              <button
-                onClick={() => handleRemove(task)}
-                aria-label={`Delete ${task.title}`}
-                className="shrink-0 text-ink-faint opacity-0 transition-opacity hover:text-error group-hover:opacity-100"
-              >
-                <Trash2 size={16} />
-              </button>
-            </li>
+            <TaskCard
+              key={task.id}
+              task={task}
+              onComplete={() => completeTask(task.id)}
+              onMove={() => handleMoveTask(task)}
+              onRemove={() => removeTask(task.id)}
+            />
           ))}
           {flexible.map((task) => (
-            <li key={task.id} className="group flex items-center gap-4 rounded-[var(--radius-card)] border border-border bg-surface px-4 py-3.5">
-              <span className="w-14 shrink-0 text-sm text-ink-faint">{task.duration}m</span>
-              <button onClick={() => completeTask(task.id)} className="flex-1 text-left text-[15px] font-medium text-ink">
-                {task.title}
-              </button>
-              <button
-                onClick={() => handleRemove(task)}
-                aria-label={`Delete ${task.title}`}
-                className="shrink-0 text-ink-faint opacity-0 transition-opacity hover:text-error group-hover:opacity-100"
-              >
-                <Trash2 size={16} />
-              </button>
-            </li>
+            <TaskCard
+              key={task.id}
+              task={task}
+              onComplete={() => completeTask(task.id)}
+              onMove={() => handleMoveTask(task)}
+              onRemove={() => removeTask(task.id)}
+            />
           ))}
           {pendingHabits.map((h) => (
-            <li key={h.id} className="flex items-center gap-4 rounded-[var(--radius-card)] border border-border bg-sage-soft px-4 py-3.5">
+            <div key={h.id} className="flex items-center gap-4 rounded-[var(--radius-card)] border border-border bg-sage-soft px-4 py-3.5">
               <span className="w-14 shrink-0 text-sm text-primary">Daily</span>
               <span className="flex-1 text-[15px] font-medium text-primary">{h.name}</span>
-            </li>
+            </div>
           ))}
-        </ol>
+        </div>
       )}
 
       {!isEmpty && mode === 'timeline' && (

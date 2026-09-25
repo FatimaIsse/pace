@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { useUI } from '@/context/UIContext'
 import { useTasks } from '@/hooks/useTasks'
 import { useSpotifyPlayer } from '@/hooks/useSpotifyPlayer'
+import { useMoodSound } from '@/context/MoodSoundContext'
 import { SkipRescueSheet } from './SkipRescueSheet'
 import type { SkipReason } from '@/types'
 
@@ -20,6 +21,7 @@ export function FocusMode() {
   const { focusTask, startFocus, stopFocus } = useUI()
   const { completeTask, skipTask, updateTask, archiveTask, removeTask } = useTasks()
   const spotify = useSpotifyPlayer()
+  const { useDuringFocus, preferredSound, play: playFocusSound, stop: stopFocusSound } = useMoodSound()
 
   const [secondsLeft, setSecondsLeft] = useState(0)
   const [running, setRunning] = useState(true)
@@ -34,6 +36,18 @@ export function FocusMode() {
       setShowExitConfirm(false)
     }
   }, [focusTask])
+
+  // Focus Mode owns the sound's lifecycle only when this preference is on —
+  // starts the last-chosen sound the moment a session begins, pauses it the
+  // moment the session ends (Done, or any Skip Rescue exit path).
+  useEffect(() => {
+    if (!useDuringFocus) return
+    if (focusTask) {
+      playFocusSound(preferredSound)
+      return () => stopFocusSound()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusTask, useDuringFocus])
 
   useEffect(() => {
     if (!focusTask || !running || onBreak) return

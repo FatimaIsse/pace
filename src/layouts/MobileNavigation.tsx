@@ -5,13 +5,13 @@ import { useUI } from '@/context/UIContext'
 import { cn } from '@/utils/cn'
 
 export function MobileNavigation() {
-  const { openBrainDump } = useUI()
+  const { openSmartAdd } = useUI()
 
   return (
     <>
       <button
-        onClick={openBrainDump}
-        aria-label="Brain dump"
+        onClick={openSmartAdd}
+        aria-label="Add"
         className="fixed bottom-20 right-5 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg transition-colors duration-200 hover:bg-primary-hover md:hidden"
       >
         <Plus size={26} strokeWidth={2.25} />

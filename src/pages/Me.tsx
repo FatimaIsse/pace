@@ -10,7 +10,7 @@ import { logOut } from '@/firebase/auth'
 const MENU_ITEMS = [
   { to: '/me/account', label: 'Account', icon: User },
   { to: '/me/stats', label: 'My Stats', icon: BarChart3 },
-  { to: '/me/preferences', label: 'My Preferences', icon: Heart },
+  { to: '/me/preferences', label: 'Preferences', icon: Heart },
 ]
 
 export function Me() {
@@ -20,13 +20,10 @@ export function Me() {
   const initial = (profile?.name || profile?.email || '?').charAt(0).toUpperCase()
 
   return (
-    <div className="flex flex-col gap-10">
-      <div>
-        <h1 className="text-[28px] font-bold text-ink sm:text-[32px]">Me</h1>
-        <p className="mt-1 text-[15px] text-ink-soft">Your space, always.</p>
-      </div>
+    <div className="mx-auto flex w-full max-w-[700px] flex-col gap-10">
+      <h1 className="text-[28px] font-bold text-ink sm:text-[32px]">Me</h1>
 
-      <div className="flex flex-col items-center gap-1.5 text-center">
+      <div className="flex flex-col items-center gap-1 text-center">
         <div className="relative">
           <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-sage-soft text-3xl font-semibold text-primary">
             {profile?.photoURL ? (
@@ -44,7 +41,8 @@ export function Me() {
           </button>
         </div>
         <h2 className="mt-2 text-2xl font-semibold text-ink">{profile?.name || 'Me'}</h2>
-        {profile?.bio && <p className="text-[15px] text-ink-soft">{profile.bio}</p>}
+        <p className="text-[15px] text-ink-soft">{profile?.email}</p>
+        {profile?.bio && <p className="text-[15px] text-ink-faint">{profile.bio}</p>}
       </div>
 
       <Card className="flex flex-col p-2 sm:p-2">

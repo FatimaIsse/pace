@@ -11,7 +11,7 @@ import type { BrainDumpItemType } from '@/types'
 // jump straight to it instead of leaving the person to hunt for it.
 const EDIT_ROUTE: Record<BrainDumpItemType, string> = {
   habit: '/habits',
-  goal: '/habits',
+  goal: '/plan',
   project: '/projects',
   task: '/today',
   reminder: '/today',

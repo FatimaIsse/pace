@@ -8,7 +8,7 @@ import { MoodSoundPicker } from '@/components/ui/MoodSoundPicker'
 import logo from '@/assets/logo.png'
 
 export function Sidebar() {
-  const { openBrainDump } = useUI()
+  const { openSmartAdd } = useUI()
 
   return (
     <aside className="sticky top-0 hidden h-svh w-[220px] shrink-0 flex-col border-r border-border bg-surface px-4 py-8 md:flex">
@@ -42,11 +42,11 @@ export function Sidebar() {
       </nav>
 
       <button
-        onClick={openBrainDump}
+        onClick={openSmartAdd}
         className="mt-auto flex items-center gap-3 rounded-[var(--radius-button)] border border-border px-3 py-2.5 text-[15px] font-medium text-ink-soft transition-colors duration-200 hover:bg-soft hover:text-ink"
       >
         <Plus size={20} strokeWidth={2} />
-        Brain Dump
+        Add
       </button>
     </aside>
   )

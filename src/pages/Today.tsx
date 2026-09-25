@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { usePreferences } from '@/context/PreferencesContext'
 import { useUI } from '@/context/UIContext'
 import { useCheckIn } from '@/hooks/useCheckIn'
 import { useTasks } from '@/hooks/useTasks'
 import { useHabits } from '@/hooks/useHabits'
-import { useGoals, goalCoversToday } from '@/hooks/useGoals'
+import { useGoals } from '@/hooks/useGoals'
 import { useBrainDump } from '@/hooks/useBrainDump'
-import { calculateDailyCapacity, generateDailyPlan, personalizedFocus } from '@/services/planning'
+import { applyCapacityPreferences, generateDailyPlan, makeRealistic, personalizedFocus } from '@/services/planning'
 import { friendlyGreeting, isToday, todayISO } from '@/utils/date'
 import type { SkipReason, Task } from '@/types'
 import type { InboxRouteState } from '@/components/features/InboxSheet'
@@ -21,10 +22,11 @@ import { TaskCard } from '@/components/features/TaskCard'
 import { HabitCard } from '@/components/features/HabitCard'
 import { SkipRescueSheet } from '@/components/features/SkipRescueSheet'
 import { ChangeTop3Sheet } from '@/components/features/ChangeTop3Sheet'
-import { PlansChangedSheet, type PlanChangeReason } from '@/components/features/PlansChangedSheet'
+import { PlansChangedSheet, type PlanChangeReason, type PlanChangeResult } from '@/components/features/PlansChangedSheet'
 import { PauseModeSheet } from '@/components/features/PauseModeSheet'
 import { StartHereSheet } from '@/components/features/StartHereSheet'
 import { QuickAddTask } from '@/components/features/QuickAddTask'
+import { NeedHelpSheet } from '@/components/features/NeedHelpSheet'
 
 function PausedToday({ deadlines }: { deadlines: Task[] }) {
   const { resume } = usePreferences()
@@ -32,7 +34,7 @@ function PausedToday({ deadlines }: { deadlines: Task[] }) {
 
   if (rebuilding) {
     return (
-      <div className="animate-card-in flex flex-col items-center gap-4 py-16 text-center">
+      <div className="animate-card-in mx-auto flex w-full max-w-[820px] flex-col items-center gap-4 py-16 text-center">
         <h1 className="text-2xl font-semibold text-ink">Welcome back.</h1>
         <p className="text-[15px] text-ink-soft">Want me to rebuild your plan gently?</p>
         <Button onClick={() => resume()}>Rebuild my plan</Button>
@@ -41,7 +43,7 @@ function PausedToday({ deadlines }: { deadlines: Task[] }) {
   }
 
   return (
-    <div className="animate-card-in flex flex-col items-center gap-3 py-16 text-center">
+    <div className="animate-card-in mx-auto flex w-full max-w-[820px] flex-col items-center gap-3 py-16 text-center">
       <h1 className="text-2xl font-semibold text-ink">Pace is paused.</h1>
       <p className="text-[15px] text-ink-soft">Take the time you need.</p>
 
@@ -65,10 +67,10 @@ function PausedToday({ deadlines }: { deadlines: Task[] }) {
 
 export function Today() {
   const { profile } = useAuth()
-  const { isPaused } = usePreferences()
-  const { startFocus, openOverwhelmed } = useUI()
+  const { isPaused, planningStyle, dailyCapacityPref, gentleReminders } = usePreferences()
+  const { startFocus, openOverwhelmed, openRecovery } = useUI()
   const { todayCheckIn, submitCheckIn } = useCheckIn()
-  const { tasks, addTask, updateTask, completeTask, uncompleteTask, skipTask, archiveTask, removeTask } = useTasks()
+  const { tasks, updateTask, completeTask, uncompleteTask, skipTask, archiveTask, removeTask } = useTasks()
   const { habits, sessionsFor, hasSessionToday, logSession } = useHabits()
   const { goals } = useGoals()
   const { removeInboxItem } = useBrainDump()
@@ -83,8 +85,11 @@ export function Today() {
   const [startHereOpen, setStartHereOpen] = useState(false)
   const [quickAddOpen, setQuickAddOpen] = useState(false)
   const [inboxPrefill, setInboxPrefill] = useState<{ title: string; dumpId: string; key: string } | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
   const [restarting, setRestarting] = useState(false)
+  const [needHelpOpen, setNeedHelpOpen] = useState(false)
+  const [completedExpanded, setCompletedExpanded] = useState(false)
+  const [planChangeResult, setPlanChangeResult] = useState<PlanChangeResult | null>(null)
+  const [undoMoves, setUndoMoves] = useState<Map<string, string | null>>(new Map())
 
   useEffect(() => {
     const prefill = (location.state as InboxRouteState | null)?.inboxPrefill
@@ -95,25 +100,19 @@ export function Today() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state])
 
-  // Every active goal still in its own month/week/date range hands out one
-  // task per day toward it — this is what turns "learn Spanish this month"
-  // into something that actually shows up to do today.
+  // 3+ inactive days opens Recovery Mode instead of the normal flow — checked
+  // once per mount using the *previous* lastActiveAt (useTrackActivity writes
+  // a fresh one shortly after this runs, so this only fires on the first
+  // Today visit after a real gap, not on every subsequent render).
+  const RECOVERY_THRESHOLD_DAYS = 3
   useEffect(() => {
-    const today = todayISO()
-    for (const goal of goals) {
-      if (goal.status === 'done' || !goalCoversToday(goal, today)) continue
-      const hasToday = tasks.some((t) => t.goalId === goal.id && t.scheduledFor === today)
-      if (!hasToday) {
-        addTask({ title: `Work toward: ${goal.title}`, duration: 20, scheduledFor: today, goalId: goal.id, recurrence: 'daily' })
-      }
-    }
+    if (!gentleReminders) return
+    const last = profile?.lastActiveAt
+    if (!last) return
+    const daysSince = (Date.now() - new Date(last).getTime()) / (1000 * 60 * 60 * 24)
+    if (daysSince >= RECOVERY_THRESHOLD_DAYS) openRecovery()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [goals, tasks])
-
-  function showToast(message: string) {
-    setToast(message)
-    window.setTimeout(() => setToast(null), 2600)
-  }
+  }, [])
 
   const activeTasks = tasks.filter((t) => t.status === 'active')
   const completedToday = tasks
@@ -134,7 +133,7 @@ export function Today() {
 
   if (!todayCheckIn || restarting) {
     return (
-      <div className="flex flex-col gap-6">
+      <div className="mx-auto flex w-full max-w-[820px] flex-col gap-6">
         <div>
           <h1 className="text-[28px] font-bold text-ink sm:text-[32px]">
             {friendlyGreeting()}, {firstName ?? 'there'}.
@@ -152,43 +151,59 @@ export function Today() {
   }
 
   const checkIn = todayCheckIn
-  const capacity = calculateDailyCapacity(checkIn.energy, checkIn.dayLoad)
+  const capacity = applyCapacityPreferences(checkIn.energy, checkIn.dayLoad, { planningStyle, dailyCapacityPref })
   const eligibleTasks = activeTasks.filter((t) => t.scheduledFor === todayISO() || t.scheduledFor === null)
   const plan = generateDailyPlan(eligibleTasks, capacity)
   const activeHabits = habits.filter((h) => !h.archivedAt)
 
   async function handlePlanChange(reason: PlanChangeReason) {
-    setPlansChangedOpen(false)
     if (reason === 'need_break') {
+      setPlansChangedOpen(false)
       setPauseOpen(true)
       return
     }
     if (reason === 'start_over') {
+      setPlansChangedOpen(false)
       setRestarting(true)
       return
     }
-    if (reason === 'energy_dropped') {
-      await submitCheckIn('low', checkIn.dayLoad)
-    } else {
-      await submitCheckIn(checkIn.energy, 'packed')
+
+    // Genuinely rebuilds the remaining day instead of just re-submitting the
+    // check-in and hoping the plan cap trimmed enough — moves the lowest-
+    // scoring flexible work out of today, protects fixed/top3 items, and
+    // reports exactly what changed so it can be undone.
+    const nextEnergy = reason === 'energy_dropped' ? 'low' : checkIn.energy
+    const nextDayLoad = reason === 'energy_dropped' ? checkIn.dayLoad : 'packed'
+    const nextCapacity = applyCapacityPreferences(nextEnergy, nextDayLoad, { planningStyle, dailyCapacityPref })
+    const { kept, moved } = makeRealistic(eligibleTasks, nextCapacity)
+
+    const undoMap = new Map(moved.map((t) => [t.id, t.scheduledFor]))
+    for (const task of moved) {
+      await updateTask(task.id, { scheduledFor: null })
     }
-    showToast('I made today lighter.')
+    await submitCheckIn(nextEnergy, nextDayLoad)
+
+    setUndoMoves(undoMap)
+    setPlanChangeResult({ kept: kept.length, moved: moved.map((t) => t.title) })
+  }
+
+  function handleUndoPlanChange() {
+    for (const [id, scheduledFor] of undoMoves) {
+      updateTask(id, { scheduledFor })
+    }
+    setUndoMoves(new Map())
+    setPlanChangeResult(null)
+    setPlansChangedOpen(false)
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="mx-auto flex w-full max-w-[820px] flex-col gap-8">
       <div>
         <h1 className="text-[28px] font-bold text-ink sm:text-[32px]">
           {friendlyGreeting()}, {firstName ?? 'there'}.
         </h1>
         <p className="mt-1 text-[15px] text-ink-soft">{focusMessage}</p>
       </div>
-
-      {toast && (
-        <div className="animate-card-in rounded-[var(--radius-button)] bg-sage-soft px-4 py-2.5 text-sm font-medium text-primary">
-          {toast}
-        </div>
-      )}
 
       <section className="flex flex-col gap-3">
         {plan.rightNow ? (
@@ -197,6 +212,7 @@ export function Today() {
             onStart={() => startFocus(plan.rightNow!)}
             onSkip={() => setSkipTarget(plan.rightNow)}
             onEdit={() => setEditingTask(plan.rightNow)}
+            onMove={() => updateTask(plan.rightNow!.id, { scheduledFor: null })}
             onRemove={() => removeTask(plan.rightNow!.id)}
           />
         ) : (
@@ -223,6 +239,7 @@ export function Today() {
                 onComplete={() => completeTask(task.id)}
                 onSkip={() => setSkipTarget(task)}
                 onClick={() => setEditingTask(task)}
+                onMove={() => updateTask(task.id, { scheduledFor: null })}
                 onRemove={() => removeTask(task.id)}
               />
             ))}
@@ -237,6 +254,7 @@ export function Today() {
             <HabitCard
               key={h.id}
               habit={h}
+              linkedGoalTitle={goals.find((g) => g.id === h.goalId)?.title ?? null}
               capacity={capacity}
               hasSessionToday={hasSessionToday(h.id)}
               recentSessions={sessionsFor(h.id)}
@@ -247,13 +265,21 @@ export function Today() {
       )}
 
       {completedToday.length > 0 && (
-        <section className="flex flex-col gap-3">
-          <h2 className="text-[15px] font-semibold text-ink-soft">Completed today ({completedToday.length})</h2>
-          <div className="flex flex-col gap-2">
-            {completedToday.map((task) => (
-              <TaskCard key={task.id} task={task} completed onComplete={() => uncompleteTask(task.id)} />
-            ))}
-          </div>
+        <section className="flex flex-col gap-2">
+          <button
+            onClick={() => setCompletedExpanded((v) => !v)}
+            className="flex items-center gap-1.5 self-start text-[15px] font-semibold text-ink-soft hover:text-ink"
+          >
+            Completed today · {completedToday.length}
+            {completedExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+          {completedExpanded && (
+            <div className="animate-card-in flex flex-col gap-2">
+              {completedToday.map((task) => (
+                <TaskCard key={task.id} task={task} completed onComplete={() => uncompleteTask(task.id)} />
+              ))}
+            </div>
+          )}
         </section>
       )}
 
@@ -263,27 +289,23 @@ export function Today() {
         </Link>
       </div>
 
-      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-border pt-6 text-sm text-ink-faint">
-        <button onClick={() => setQuickAddOpen(true)} className="hover:text-ink-soft">
-          Add a task
-        </button>
-        <span aria-hidden>·</span>
-        <button onClick={() => setStartHereOpen(true)} className="hover:text-ink-soft">
-          I don't know where to start
-        </button>
-        <span aria-hidden>·</span>
-        <button onClick={openOverwhelmed} className="hover:text-ink-soft">
-          I'm overwhelmed
-        </button>
-        <span aria-hidden>·</span>
-        <button onClick={() => setPlansChangedOpen(true)} className="hover:text-ink-soft">
-          Plans changed?
-        </button>
-        <span aria-hidden>·</span>
-        <button onClick={() => setPauseOpen(true)} className="hover:text-ink-soft">
-          Pause Pace
+      <div className="flex justify-center border-t border-border pt-6">
+        <button
+          onClick={() => setNeedHelpOpen(true)}
+          className="text-sm font-medium text-ink-faint hover:text-ink-soft"
+        >
+          Need help?
         </button>
       </div>
+
+      <NeedHelpSheet
+        open={needHelpOpen}
+        onClose={() => setNeedHelpOpen(false)}
+        onStartHere={() => setStartHereOpen(true)}
+        onPlansChanged={() => setPlansChangedOpen(true)}
+        onOverwhelmed={openOverwhelmed}
+        onNeedBreak={() => setPauseOpen(true)}
+      />
 
       <SkipRescueSheet
         task={skipTarget}
@@ -309,8 +331,13 @@ export function Today() {
 
       <PlansChangedSheet
         open={plansChangedOpen}
-        onClose={() => setPlansChangedOpen(false)}
+        onClose={() => {
+          setPlansChangedOpen(false)
+          setPlanChangeResult(null)
+        }}
         onSelect={handlePlanChange}
+        result={planChangeResult}
+        onUndo={handleUndoPlanChange}
       />
 
       <PauseModeSheet open={pauseOpen} onClose={() => setPauseOpen(false)} />

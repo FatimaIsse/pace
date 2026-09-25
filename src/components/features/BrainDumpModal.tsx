@@ -4,10 +4,7 @@ import { Textarea } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { useUI } from '@/context/UIContext'
 import { useBrainDump } from '@/hooks/useBrainDump'
-import { useTasks } from '@/hooks/useTasks'
-import { useProjects } from '@/hooks/useProjects'
-import { useGoals } from '@/hooks/useGoals'
-import { useHabits } from '@/hooks/useHabits'
+import { useCreateFromClassifiedItem } from '@/hooks/useCreateFromClassifiedItem'
 import { withTimeout } from '@/utils/promise'
 import type { BrainDumpItem } from '@/types'
 
@@ -24,10 +21,7 @@ const TYPE_LABELS: Record<string, [singular: string, plural: string]> = {
 export function BrainDumpModal() {
   const { brainDumpOpen, closeBrainDump } = useUI()
   const { capture, finalizeDump } = useBrainDump()
-  const { addTask } = useTasks()
-  const { addProject } = useProjects()
-  const { addGoal } = useGoals()
-  const { addHabit } = useHabits()
+  const { createFromClassifiedItem } = useCreateFromClassifiedItem()
 
   const [text, setText] = useState('')
   const [counts, setCounts] = useState<Record<string, number> | null>(null)
@@ -47,39 +41,10 @@ export function BrainDumpModal() {
     closeBrainDump()
   }
 
-  // Turns each classified fragment into the real thing it sounds like —
-  // a task, project, goal, or habit — instead of just filing it away for
-  // later manual sorting. Anything genuinely ambiguous stays in the Inbox.
-  // Each create is bounded so a slow/unreachable backend can't leave the
-  // whole flow stuck on "Organizing…" — a timed-out item just falls back
-  // to the Inbox like an unclear one, rather than blocking everything else.
-  async function createFromItem(item: BrainDumpItem): Promise<boolean> {
-    const create = (async () => {
-      switch (item.type) {
-        case 'task':
-        case 'reminder':
-          await addTask({ title: item.text, duration: item.duration ?? 15, source: 'brain_dump' })
-          return true
-        case 'project':
-          await addProject(item.text)
-          return true
-        case 'goal':
-          await addGoal({ title: item.text })
-          return true
-        case 'habit':
-          await addHabit({
-            name: item.text,
-            goalVersion: [{ label: 'Do it', value: 'once' }],
-            minimumVersion: [{ label: 'Do it', value: 'a little' }],
-          })
-          return true
-        default:
-          return false
-      }
-    })()
-    return withTimeout(create, CREATE_TIMEOUT_MS, false)
-  }
-
+  // Anything genuinely ambiguous stays in the Inbox. Each create is bounded
+  // so a slow/unreachable backend can't leave the whole flow stuck on
+  // "Organizing…" — a timed-out item just falls back to the Inbox like an
+  // unclear one, rather than blocking everything else.
   async function handleSubmit() {
     if (!text.trim()) return
     setSubmitting(true)
@@ -91,7 +56,7 @@ export function BrainDumpModal() {
       const tally: Record<string, number> = {}
       const unclear: BrainDumpItem[] = []
       for (const item of outcome.organizedItems) {
-        const created = await createFromItem(item)
+        const created = await withTimeout(createFromClassifiedItem(item), CREATE_TIMEOUT_MS, false)
         if (created) tally[item.type] = (tally[item.type] ?? 0) + 1
         else unclear.push(item)
       }

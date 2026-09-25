@@ -2,19 +2,24 @@ import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import type { Task } from '@/types'
-import { calculateDailyCapacity, chooseNextTask, explainTaskChoice, firstStepOnly } from '@/services/planning'
+import { applyCapacityPreferences, chooseNextTask, explainTaskChoice, firstStepOnly } from '@/services/planning'
 import { useUI } from '@/context/UIContext'
 import { useTasks } from '@/hooks/useTasks'
 import { useCheckIn } from '@/hooks/useCheckIn'
+import { usePreferences } from '@/context/PreferencesContext'
 
 const BUDGETS = [5, 15, 30]
 
 export function OverwhelmedMode() {
   const { overwhelmedOpen, closeOverwhelmed } = useUI()
-  const { tasks, completeTask, updateTask } = useTasks()
+  const { tasks, completeTask, addTask, removeTask } = useTasks()
   const { todayCheckIn } = useCheckIn()
+  const { planningStyle, dailyCapacityPref } = usePreferences()
 
-  const capacity = calculateDailyCapacity(todayCheckIn?.energy ?? 'okay', todayCheckIn?.dayLoad ?? 'normal')
+  const capacity = applyCapacityPreferences(todayCheckIn?.energy ?? 'okay', todayCheckIn?.dayLoad ?? 'normal', {
+    planningStyle,
+    dailyCapacityPref,
+  })
 
   const [step, setStep] = useState<'ask' | 'task' | 'doing' | 'done'>('ask')
   const [budget, setBudget] = useState<number | null>(null)
@@ -52,11 +57,37 @@ export function OverwhelmedMode() {
     setStep('done')
   }
 
-  function handleStillTooBig() {
+  // Spins off a temporary child task instead of renaming the picked task in
+  // place — completing this tiny step should never mark a real, larger task
+  // (e.g. "Clean bedroom") as done. The parent is left completely untouched
+  // and stays wherever it already was (Today/DayPlan keep showing it as
+  // itself); this child is a short-lived, session-scoped artifact.
+  async function handleStillTooBig() {
     if (!current) return
     const step = firstStepOnly(current.title, current.duration)
-    updateTask(current.id, { title: step.title, duration: step.duration })
-    setCurrent({ ...current, title: step.title, duration: step.duration })
+    const parentId = current.parentTaskId ?? current.id
+    const newId = await addTask({
+      title: step.title,
+      duration: step.duration,
+      parentTaskId: parentId,
+      scheduledFor: current.scheduledFor,
+      source: 'breakdown',
+    })
+    // The previous step (if this itself was already a temporary child) is
+    // now superseded by the even-smaller one — remove it rather than
+    // leaving two half-steps behind.
+    if (current.parentTaskId) removeTask(current.id)
+    if (newId) {
+      setCurrent({
+        ...current,
+        id: newId,
+        title: step.title,
+        duration: step.duration,
+        parentTaskId: parentId,
+        skipCount: 0,
+        skipReasons: [],
+      })
+    }
   }
 
   return (

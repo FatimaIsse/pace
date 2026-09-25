@@ -14,12 +14,14 @@ const FEELING_OPTIONS: { value: HabitFeeling; label: string }[] = [
 
 export function HabitCard({
   habit,
+  linkedGoalTitle = null,
   capacity,
   hasSessionToday,
   recentSessions,
   onLog,
 }: {
   habit: Habit
+  linkedGoalTitle?: string | null
   capacity: DailyCapacity
   hasSessionToday: boolean
   recentSessions: HabitSession[]
@@ -34,6 +36,7 @@ export function HabitCard({
       <Card className="animate-card-in">
         <p className="text-sm font-medium text-ink-faint">Daily</p>
         <h3 className="mt-1 text-lg font-semibold text-ink">{habit.name}</h3>
+        {linkedGoalTitle && <p className="text-sm text-ink-faint">→ {linkedGoalTitle}</p>}
         <p className="mt-2 text-[15px] text-ink-soft">{describeRhythm(recentSessions)}</p>
       </Card>
     )
@@ -68,6 +71,7 @@ export function HabitCard({
     <Card className="animate-card-in">
       <p className="text-sm font-medium text-ink-faint">Daily</p>
       <h3 className="mt-1 text-lg font-semibold text-ink">{habit.name}</h3>
+      {linkedGoalTitle && <p className="text-sm text-ink-faint">→ {linkedGoalTitle}</p>}
 
       {usingMinimum && <p className="mt-1 text-sm text-accent">Minimum is enough today.</p>}
 

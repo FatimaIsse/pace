@@ -1,4 +1,5 @@
-import { Check, Trash2 } from 'lucide-react'
+import { Check, ArrowRightLeft, Pencil, SkipForward, Trash2 } from 'lucide-react'
+import { OverflowMenu, type OverflowMenuItem } from '@/components/ui/OverflowMenu'
 import type { Task } from '@/types'
 import { cn } from '@/utils/cn'
 
@@ -7,6 +8,7 @@ export function TaskCard({
   onComplete,
   onSkip,
   onClick,
+  onMove,
   onRemove,
   completed = false,
 }: {
@@ -14,11 +16,20 @@ export function TaskCard({
   onComplete: () => void
   onSkip?: () => void
   onClick?: () => void
+  onMove?: () => void
   onRemove?: () => void
   completed?: boolean
 }) {
   function handleRemove() {
     if (window.confirm(`Delete "${task.title}"? This can't be undone.`)) onRemove?.()
+  }
+
+  const menuItems: OverflowMenuItem[] = []
+  if (!completed && onSkip) menuItems.push({ label: 'Skip', icon: <SkipForward size={15} />, onClick: onSkip })
+  if (onClick) menuItems.push({ label: 'Edit', icon: <Pencil size={15} />, onClick })
+  if (onMove) menuItems.push({ label: 'Move', icon: <ArrowRightLeft size={15} />, onClick: onMove })
+  if (onRemove) {
+    menuItems.push({ label: 'Delete', icon: <Trash2 size={15} />, onClick: handleRemove, variant: 'danger' })
   }
 
   return (
@@ -46,24 +57,7 @@ export function TaskCard({
         <p className="text-sm text-ink-faint">{task.duration} min</p>
       </button>
 
-      {!completed && onSkip && (
-        <button
-          onClick={onSkip}
-          className="shrink-0 text-sm font-medium text-ink-faint transition-colors duration-200 hover:text-ink-soft"
-        >
-          Skip
-        </button>
-      )}
-
-      {onRemove && (
-        <button
-          onClick={handleRemove}
-          aria-label={`Delete ${task.title}`}
-          className="shrink-0 text-ink-faint transition-colors duration-200 hover:text-error"
-        >
-          <Trash2 size={16} />
-        </button>
-      )}
+      {menuItems.length > 0 && <OverflowMenu items={menuItems} label={`More options for ${task.title}`} />}
     </div>
   )
 }

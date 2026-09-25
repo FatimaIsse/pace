@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import { useGoals } from '@/hooks/useGoals'
-import { Card } from '@/components/ui/Card'
+import { useBrainDump } from '@/hooks/useBrainDump'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
 import { GoalCard } from '@/components/features/GoalCard'
+import { NewGoalForm } from '@/components/features/NewGoalForm'
+import type { InboxRouteState } from '@/components/features/InboxSheet'
 import { formatMonthLabel, currentMonthKey } from '@/utils/date'
 
 export function MonthPlan() {
@@ -19,16 +20,21 @@ export function MonthPlan() {
     removeMilestone,
     renameMilestone,
   } = useGoals()
+  const { removeInboxItem } = useBrainDump()
+  const location = useLocation()
+  const navigate = useNavigate()
   const goals = goalsForMonth()
   const [adding, setAdding] = useState(false)
-  const [title, setTitle] = useState('')
+  const [inboxPrefill, setInboxPrefill] = useState<{ title: string; dumpId: string; key: string } | null>(null)
 
-  async function handleAdd() {
-    if (!title.trim()) return
-    await addGoal({ title: title.trim() })
-    setTitle('')
-    setAdding(false)
-  }
+  useEffect(() => {
+    const prefill = (location.state as InboxRouteState | null)?.inboxPrefill
+    if (!prefill || prefill.type !== 'goal') return
+    setInboxPrefill({ title: prefill.text, dumpId: prefill.dumpId, key: prefill.key })
+    setAdding(true)
+    navigate(location.pathname, { replace: true, state: {} })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state])
 
   return (
     <div className="flex flex-col gap-4">
@@ -55,23 +61,19 @@ export function MonthPlan() {
       </div>
 
       {adding ? (
-        <Card className="flex flex-col gap-3">
-          <Input
-            label="What matters this month?"
-            voiceInput
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            autoFocus
-          />
-          <div className="flex gap-2">
-            <Button variant="secondary" className="flex-1" onClick={() => setAdding(false)}>
-              Cancel
-            </Button>
-            <Button className="flex-1" onClick={handleAdd}>
-              Save
-            </Button>
-          </div>
-        </Card>
+        <NewGoalForm
+          initialTitle={inboxPrefill?.title}
+          onCancel={() => {
+            setAdding(false)
+            setInboxPrefill(null)
+          }}
+          onSave={async (options) => {
+            await addGoal(options)
+            if (inboxPrefill) await removeInboxItem(inboxPrefill.dumpId, inboxPrefill.key)
+            setAdding(false)
+            setInboxPrefill(null)
+          }}
+        />
       ) : (
         goals.length < 3 && (
           <button

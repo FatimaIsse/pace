@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { ChevronDown, ChevronUp, Music, VolumeX } from 'lucide-react'
-import { useMoodSound, MOODS, MOOD_TRACKS, type Mood } from '@/context/MoodSoundContext'
+import { Music, VolumeX } from 'lucide-react'
+import { useMoodSound, FOCUS_SOUND_OPTIONS, FOCUS_SOUNDS } from '@/context/MoodSoundContext'
 import { cn } from '@/utils/cn'
 
 export function MoodSoundPicker({ className, align = 'right' }: { className?: string; align?: 'left' | 'right' }) {
-  const { mood, trackId, play, stop } = useMoodSound()
+  const { sound, volume, setVolume, useDuringFocus, setUseDuringFocus, play, stop } = useMoodSound()
   const [open, setOpen] = useState(false)
-  const [expanded, setExpanded] = useState<Mood | null>(mood)
   const rootRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -21,15 +20,13 @@ export function MoodSoundPicker({ className, align = 'right' }: { className?: st
   return (
     <div ref={rootRef} className={cn('relative', className)}>
       <button
-        onClick={() => {
-          setExpanded(mood)
-          setOpen((prev) => !prev)
-        }}
-        aria-label="Mood sound"
+        onClick={() => setOpen((prev) => !prev)}
+        title="Focus sounds"
+        aria-label="Focus sounds"
         aria-expanded={open}
         className={cn(
           'flex h-9 w-9 items-center justify-center rounded-full text-ink-faint transition-colors duration-200 hover:bg-soft hover:text-ink-soft',
-          mood && 'text-primary',
+          sound && 'text-primary',
         )}
       >
         <Music size={18} />
@@ -38,58 +35,11 @@ export function MoodSoundPicker({ className, align = 'right' }: { className?: st
       {open && (
         <div
           className={cn(
-            'animate-card-in absolute top-11 z-20 max-h-[70vh] w-72 overflow-y-auto rounded-[var(--radius-card)] border border-border bg-surface p-1.5 shadow-lg',
+            'animate-card-in absolute top-11 z-20 w-64 rounded-[var(--radius-card)] border border-border bg-surface p-1.5 shadow-lg',
             align === 'left' ? 'left-0' : 'right-0',
           )}
         >
-          <p className="px-2.5 py-1.5 text-xs font-medium uppercase tracking-wide text-ink-faint">Set the mood</p>
-
-          {MOODS.map((m) => {
-            const isExpanded = expanded === m
-            const isPlayingThisMood = mood === m
-            return (
-              <div key={m}>
-                <button
-                  onClick={() => setExpanded((prev) => (prev === m ? null : m))}
-                  className={cn(
-                    'flex w-full items-center justify-between rounded-[var(--radius-button)] px-2.5 py-2 text-left text-sm font-medium transition-colors duration-200 hover:bg-soft',
-                    isPlayingThisMood ? 'text-primary' : 'text-ink-soft hover:text-ink',
-                  )}
-                >
-                  {MOOD_TRACKS[m].label}
-                  {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                </button>
-
-                {isExpanded && (
-                  <div className="mb-1 flex flex-col gap-0.5 pl-2.5">
-                    {MOOD_TRACKS[m].tracks.map((track) => {
-                      const isPlayingThisTrack = isPlayingThisMood && trackId === track.id
-                      return (
-                        <button
-                          key={track.id}
-                          onClick={() => {
-                            play(m, track.id)
-                            setOpen(false)
-                          }}
-                          className={cn(
-                            'flex w-full flex-col items-start rounded-[var(--radius-button)] border-l-2 border-border px-2.5 py-1.5 text-left transition-colors duration-200 hover:bg-soft',
-                            isPlayingThisTrack && 'border-primary bg-sage-soft',
-                          )}
-                        >
-                          <span className={cn('text-sm font-medium text-ink-soft', isPlayingThisTrack && 'text-primary')}>
-                            {track.title}
-                          </span>
-                          <span className="text-xs text-ink-faint">
-                            {track.credit} · {track.license}
-                          </span>
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-            )
-          })}
+          <p className="px-2.5 py-1.5 text-xs font-medium uppercase tracking-wide text-ink-faint">Focus sounds</p>
 
           <button
             onClick={() => {
@@ -98,15 +48,60 @@ export function MoodSoundPicker({ className, align = 'right' }: { className?: st
             }}
             className={cn(
               'flex w-full items-center gap-1.5 rounded-[var(--radius-button)] px-2.5 py-2 text-left text-sm font-medium text-ink-faint transition-colors duration-200 hover:bg-soft hover:text-ink-soft',
-              !mood && 'text-ink-soft',
+              !sound && 'bg-sage-soft text-primary',
             )}
           >
             <VolumeX size={14} /> Off
           </button>
 
-          <p className="mt-1 border-t border-border px-2.5 pt-1.5 text-[11px] leading-snug text-ink-faint">
-            Music via Wikimedia Commons.
-          </p>
+          {FOCUS_SOUND_OPTIONS.map((option) => {
+            const isPlaying = sound === option
+            const def = FOCUS_SOUNDS[option]
+            return (
+              <button
+                key={option}
+                onClick={() => play(option)}
+                className={cn(
+                  'flex w-full flex-col items-start rounded-[var(--radius-button)] px-2.5 py-1.5 text-left transition-colors duration-200 hover:bg-soft',
+                  isPlaying && 'bg-sage-soft',
+                )}
+              >
+                <span className={cn('text-sm font-medium text-ink-soft', isPlaying && 'text-primary')}>
+                  {def.label}
+                </span>
+                <span className="text-xs text-ink-faint">
+                  {def.credit} · {def.license}
+                </span>
+              </button>
+            )
+          })}
+
+          <div className="mt-1 border-t border-border px-2.5 pt-2.5">
+            <label className="flex items-center justify-between text-xs font-medium text-ink-faint">
+              Volume
+              <span>{Math.round(volume * 100)}%</span>
+            </label>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={volume}
+              onChange={(e) => setVolume(Number(e.target.value))}
+              className="mt-1 w-full accent-primary"
+              aria-label="Focus sound volume"
+            />
+          </div>
+
+          <label className="mt-1 flex items-center justify-between gap-2 border-t border-border px-2.5 pt-2.5 text-sm text-ink-soft">
+            Use during Focus Mode
+            <input
+              type="checkbox"
+              checked={useDuringFocus}
+              onChange={(e) => setUseDuringFocus(e.target.checked)}
+              className="h-4 w-4 accent-primary"
+            />
+          </label>
         </div>
       )}
     </div>
