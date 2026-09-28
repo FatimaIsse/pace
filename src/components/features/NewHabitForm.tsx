@@ -1,10 +1,27 @@
 import { useState } from 'react'
-import { Plus, X } from 'lucide-react'
+import { Minus, Plus, X } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { WEEKDAY_LABELS } from '@/services/planning'
 import { cn } from '@/utils/cn'
-import type { Goal, Habit } from '@/types'
+import type { Goal, Habit, HabitFrequency, HabitTarget } from '@/types'
+
+const FREQUENCY_OPTIONS: { value: HabitFrequency; label: string }[] = [
+  { value: 'daily', label: 'Every day' },
+  { value: 'per_week', label: 'Days a week' },
+  { value: 'days_of_week', label: 'Specific days' },
+]
+
+export interface NewHabitInput {
+  name: string
+  goalVersion: HabitTarget[]
+  minimumVersion: HabitTarget[]
+  goalId: string | null
+  frequency: HabitFrequency
+  timesPerWeek: number | null
+  daysOfWeek: number[] | null
+}
 
 interface Row {
   label: string
@@ -48,12 +65,7 @@ export function NewHabitForm({
   initial?: Habit
   initialName?: string
   goals?: Goal[]
-  onSave: (
-    name: string,
-    goal: { label: string; value: string }[],
-    minimum: { label: string; value: string }[],
-    goalId: string | null,
-  ) => void
+  onSave: (input: NewHabitInput) => void
   onCancel: () => void
 }) {
   const isEditing = Boolean(initial)
@@ -61,6 +73,13 @@ export function NewHabitForm({
   const [rows, setRows] = useState<Row[]>(initial ? rowsFromHabit(initial) : [emptyRow()])
   const [category, setCategory] = useState<string | null>(null)
   const [goalId, setGoalId] = useState(initial?.goalId ?? '')
+  const [frequency, setFrequency] = useState<HabitFrequency>(initial?.frequency ?? 'daily')
+  const [timesPerWeek, setTimesPerWeek] = useState(initial?.timesPerWeek ?? 3)
+  const [daysOfWeek, setDaysOfWeek] = useState<number[]>(initial?.daysOfWeek ?? [])
+
+  function toggleDay(day: number) {
+    setDaysOfWeek((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day].sort()))
+  }
 
   function updateRow(index: number, patch: Partial<Row>) {
     setRows((prev) => prev.map((r, i) => (i === index ? { ...r, ...patch } : r)))
@@ -78,17 +97,80 @@ export function NewHabitForm({
   function handleSubmit() {
     const validRows = rows.filter((r) => r.label.trim() && r.goal.trim() && r.minimum.trim())
     if (!name.trim() || validRows.length === 0) return
-    onSave(
-      name.trim(),
-      validRows.map((r) => ({ label: r.label.trim(), value: r.goal.trim() })),
-      validRows.map((r) => ({ label: r.label.trim(), value: r.minimum.trim() })),
-      goalId || null,
-    )
+    if (frequency === 'days_of_week' && daysOfWeek.length === 0) return
+    onSave({
+      name: name.trim(),
+      goalVersion: validRows.map((r) => ({ label: r.label.trim(), value: r.goal.trim() })),
+      minimumVersion: validRows.map((r) => ({ label: r.label.trim(), value: r.minimum.trim() })),
+      goalId: goalId || null,
+      frequency,
+      timesPerWeek: frequency === 'per_week' ? timesPerWeek : null,
+      daysOfWeek: frequency === 'days_of_week' ? daysOfWeek : null,
+    })
   }
 
   return (
     <Card className="flex flex-col gap-4">
       <Input label="Habit name" voiceInput value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+
+      <div>
+        <p className="mb-2 text-sm font-medium text-ink">How often?</p>
+        <div className="flex gap-2">
+          {FREQUENCY_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => setFrequency(opt.value)}
+              className={cn(
+                'flex-1 rounded-[var(--radius-button)] border border-border py-2 text-sm font-medium text-ink-soft transition-colors duration-200',
+                frequency === opt.value && 'border-primary-text bg-sage-soft text-primary-text',
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        {frequency === 'per_week' && (
+          <div className="mt-3 flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setTimesPerWeek((n) => Math.max(1, n - 1))}
+              aria-label="Fewer days a week"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-border text-ink-soft hover:bg-soft"
+            >
+              <Minus size={16} />
+            </button>
+            <span className="min-w-[112px] text-center text-[15px] font-medium text-ink">
+              {timesPerWeek} day{timesPerWeek === 1 ? '' : 's'} a week
+            </span>
+            <button
+              type="button"
+              onClick={() => setTimesPerWeek((n) => Math.min(6, n + 1))}
+              aria-label="More days a week"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-border text-ink-soft hover:bg-soft"
+            >
+              <Plus size={16} />
+            </button>
+          </div>
+        )}
+
+        {frequency === 'days_of_week' && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {WEEKDAY_LABELS.map((label, i) => (
+              <button
+                key={label}
+                onClick={() => toggleDay(i)}
+                className={cn(
+                  'h-11 w-11 rounded-full border border-border text-sm font-medium text-ink-soft transition-colors duration-200',
+                  daysOfWeek.includes(i) && 'border-primary-text bg-sage-soft text-primary-text',
+                )}
+              >
+                {label.charAt(0)}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div>
         <p className="mb-2 text-sm font-medium text-ink">Starting point (optional)</p>

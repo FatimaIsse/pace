@@ -1,25 +1,37 @@
 import { useState } from 'react'
-import { AlertTriangle, Clock, List } from 'lucide-react'
+import { addDays, format, parseISO } from 'date-fns'
+import { AlertTriangle, Check, Clock, List } from 'lucide-react'
 import { useTasks } from '@/hooks/useTasks'
 import { useHabits } from '@/hooks/useHabits'
 import { useProjects } from '@/hooks/useProjects'
+import { useGoals } from '@/hooks/useGoals'
 import { useCheckIn } from '@/hooks/useCheckIn'
 import { useMoveToTomorrow } from '@/hooks/useMoveToTomorrow'
 import { usePreferences } from '@/context/PreferencesContext'
 import { useFeedback } from '@/context/FeedbackContext'
-import { addBreathingRoom, applyCapacityPreferences, detectFragility, isDayHeavy, makeRealistic } from '@/services/planning'
+import {
+  addBreathingRoom,
+  applyCapacityPreferences,
+  detectFragility,
+  isDayHeavy,
+  isHabitDueToday,
+  makeRealistic,
+} from '@/services/planning'
 import { isToday, todayISO } from '@/utils/date'
 import { cn } from '@/utils/cn'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
 import { TaskCard } from '@/components/features/TaskCard'
+import { QuickAddTask } from '@/components/features/QuickAddTask'
+import type { Task } from '@/types'
 
 type ViewMode = 'simple' | 'timeline'
 
 export function DayPlan() {
   const { tasks, completeTask, uncompleteTask, updateTask, removeTask } = useTasks()
-  const { habits, hasSessionToday } = useHabits()
+  const { habits, sessionsFor, hasSessionToday, logSession } = useHabits()
   const { projects } = useProjects()
+  const { goalsForMonth, focusForWeek } = useGoals()
   const { todayCheckIn } = useCheckIn()
   const { moveToTomorrow } = useMoveToTomorrow()
   const { planningStyle, dailyCapacityPref, gentleReminders } = usePreferences()
@@ -27,18 +39,50 @@ export function DayPlan() {
   const [mode, setMode] = useState<ViewMode>('simple')
   const [madeLighter, setMadeLighter] = useState<{ kept: number; moved: string[] } | null>(null)
   const [undoMap, setUndoMap] = useState<Map<string, string | null>>(new Map())
+  const [editingTask, setEditingTask] = useState<Task | null>(null)
 
-  const todaysTasks = tasks.filter((t) => t.status === 'active' && t.scheduledFor === todayISO())
+  const today = todayISO()
+  const tomorrowISO = format(addDays(new Date(), 1), 'yyyy-MM-dd')
+
+  const todaysTasks = tasks.filter((t) => t.status === 'active' && t.scheduledFor === today)
   const fixed = todaysTasks
     .filter((t) => t.timing === 'fixed' && t.scheduledTime)
     .sort((a, b) => (a.scheduledTime ?? '').localeCompare(b.scheduledTime ?? ''))
   const flexible = todaysTasks.filter((t) => t.timing === 'flexible' || !t.scheduledTime)
-  const pendingHabits = habits.filter((h) => !h.archivedAt && !hasSessionToday(h.id))
+
+  // A habit not due today (e.g. 3 days a week, none of them today) simply
+  // doesn't show — unless already logged today, so an "extra" day never
+  // makes the row vanish mid-tap.
+  const pendingHabits = habits.filter(
+    (h) => !h.archivedAt && !hasSessionToday(h.id) && isHabitDueToday(h, sessionsFor(h.id), today),
+  )
+
+  const tomorrowTasks = tasks
+    .filter((t) => t.status === 'active' && t.scheduledFor === tomorrowISO)
+    .sort((a, b) => (a.scheduledTime ?? '').localeCompare(b.scheduledTime ?? ''))
+
+  const laterTasks = tasks
+    .filter((t) => t.status === 'active' && t.scheduledFor && t.scheduledFor > tomorrowISO)
+    .sort((a, b) => (a.scheduledFor ?? '').localeCompare(b.scheduledFor ?? ''))
+  const laterByDate = new Map<string, Task[]>()
+  for (const t of laterTasks) {
+    const list = laterByDate.get(t.scheduledFor!) ?? []
+    list.push(t)
+    laterByDate.set(t.scheduledFor!, list)
+  }
+
   const completedToday = tasks
     .filter((t) => t.status === 'done' && t.completedAt && isToday(t.completedAt))
     .sort((a, b) => (b.completedAt ?? '').localeCompare(a.completedAt ?? ''))
 
-  const isEmpty = fixed.length === 0 && flexible.length === 0 && pendingHabits.length === 0 && completedToday.length === 0
+  // A quiet reminder of the bigger picture while looking at today's tasks —
+  // not editable here, just kept in view. Only not-done ones, so a finished
+  // goal doesn't linger.
+  const monthGoals = goalsForMonth().filter((g) => g.status !== 'done')
+  const weekFocus = focusForWeek().filter((f) => f.status !== 'done')
+
+  const isTodayEmpty = fixed.length === 0 && flexible.length === 0 && pendingHabits.length === 0
+  const isEmpty = isTodayEmpty && tomorrowTasks.length === 0 && laterTasks.length === 0 && completedToday.length === 0
 
   const capacity = applyCapacityPreferences(todayCheckIn?.energy ?? 'okay', todayCheckIn?.dayLoad ?? 'normal', {
     planningStyle,
@@ -49,6 +93,10 @@ export function DayPlan() {
 
   function handleMoveTask(task: { id: string; scheduledFor: string | null }) {
     updateTask(task.id, { scheduledFor: null })
+  }
+
+  function handleHabitDone(habitId: string) {
+    logSession(habitId, 'goal', null)
   }
 
   // "Schedule Fragility" — cascades every fixed task after a tight gap
@@ -85,8 +133,37 @@ export function DayPlan() {
     setMadeLighter(null)
   }
 
+  function taskCardProps(task: Task, options: { canMoveToTomorrow?: boolean } = {}) {
+    return {
+      task,
+      onComplete: () => completeTask(task.id),
+      onClick: () => setEditingTask(task),
+      onMove: () => handleMoveTask(task),
+      onMoveToTomorrow: options.canMoveToTomorrow === false ? undefined : () => moveToTomorrow(task),
+      onRemove: () => removeTask(task.id),
+    }
+  }
+
   return (
     <div className="flex flex-col gap-5">
+      {(monthGoals.length > 0 || weekFocus.length > 0) && (
+        <div className="rounded-[var(--radius-card)] border border-border bg-soft px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-faint">Keep in mind</p>
+          <div className="mt-1.5 flex flex-col gap-0.5">
+            {monthGoals.map((g) => (
+              <p key={g.id} className="text-[15px] text-ink-soft">
+                <span className="text-ink-faint">This month ·</span> {g.title}
+              </p>
+            ))}
+            {weekFocus.map((f) => (
+              <p key={f.id} className="text-[15px] text-ink-soft">
+                <span className="text-ink-faint">This week ·</span> {f.title}
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-ink-faint">
           {fixed.length} fixed · {flexible.length} flexible
@@ -157,38 +234,36 @@ export function DayPlan() {
 
       {isEmpty && <EmptyState title="Nothing planned yet." subtitle="Add a task from Today to get started." />}
 
-      {!isEmpty && mode === 'simple' && (
+      {!isTodayEmpty && mode === 'simple' && (
         <div className="flex flex-col gap-2">
           {fixed.map((task) => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              onComplete={() => completeTask(task.id)}
-              onMove={() => handleMoveTask(task)}
-              onMoveToTomorrow={() => moveToTomorrow(task)}
-              onRemove={() => removeTask(task.id)}
-            />
+            <TaskCard key={task.id} {...taskCardProps(task)} />
           ))}
           {flexible.map((task) => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              onComplete={() => completeTask(task.id)}
-              onMove={() => handleMoveTask(task)}
-              onMoveToTomorrow={() => moveToTomorrow(task)}
-              onRemove={() => removeTask(task.id)}
-            />
+            <TaskCard key={task.id} {...taskCardProps(task)} />
           ))}
           {pendingHabits.map((h) => (
-            <div key={h.id} className="flex items-center gap-4 rounded-[var(--radius-card)] border border-border bg-sage-soft px-4 py-3.5">
-              <span className="w-14 shrink-0 text-sm text-primary-text">Daily</span>
-              <span className="flex-1 text-[15px] font-medium text-primary-text">{h.name}</span>
+            <div
+              key={h.id}
+              className="flex items-center gap-3 rounded-[var(--radius-card)] border border-primary-text/20 bg-sage-soft px-4 py-3.5"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-primary-text/75">Habit</p>
+                <p className="truncate text-[15px] font-medium text-primary-text">{h.name}</p>
+              </div>
+              <button
+                onClick={() => handleHabitDone(h.id)}
+                className="flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-full border border-primary-text/30 bg-surface px-3.5 text-sm font-medium text-primary-text transition-colors duration-200 hover:bg-canvas"
+              >
+                <Check size={16} strokeWidth={2.5} aria-hidden />
+                Done
+              </button>
             </div>
           ))}
         </div>
       )}
 
-      {!isEmpty && mode === 'timeline' && (
+      {!isTodayEmpty && mode === 'timeline' && (
         <div className="relative flex flex-col gap-4 border-l-2 border-border pl-5">
           {fixed.map((task) => (
             <div key={task.id} className="relative">
@@ -212,17 +287,39 @@ export function DayPlan() {
           )}
           {pendingHabits.map((h) => (
             <div key={h.id} className="relative">
-              <span className="absolute -left-[26px] top-1 h-2.5 w-2.5 rounded-full bg-accent" />
-              <p className="text-sm font-semibold text-ink-soft">Daily</p>
-              <p className="text-[15px] font-medium text-ink">{h.name}</p>
+              <span className="absolute -left-[26px] top-1 h-2.5 w-2.5 rounded-full bg-primary-text" />
+              <p className="text-sm font-semibold text-primary-text">{h.name}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tomorrowTasks.length > 0 && (
+        <div className="flex flex-col gap-2 border-t border-border pt-5">
+          <h2 className="text-[15px] font-semibold text-ink-soft">Tomorrow</h2>
+          {tomorrowTasks.map((task) => (
+            <TaskCard key={task.id} {...taskCardProps(task, { canMoveToTomorrow: false })} />
+          ))}
+        </div>
+      )}
+
+      {laterByDate.size > 0 && (
+        <div className="flex flex-col gap-4 border-t border-border pt-5">
+          <h2 className="text-[15px] font-semibold text-ink-soft">Later</h2>
+          {[...laterByDate.entries()].map(([date, dateTasks]) => (
+            <div key={date} className="flex flex-col gap-2">
+              <p className="text-sm font-medium text-ink-faint">{format(parseISO(date), 'EEEE, MMM d')}</p>
+              {dateTasks.map((task) => (
+                <TaskCard key={task.id} {...taskCardProps(task)} />
+              ))}
             </div>
           ))}
         </div>
       )}
 
       {completedToday.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <h2 className="text-[15px] font-semibold text-ink-soft">Completed ({completedToday.length})</h2>
+        <div className="flex flex-col gap-2 border-t border-border pt-5">
+          <h2 className="text-[15px] font-semibold text-ink-soft">Completed today · {completedToday.length}</h2>
           {completedToday.map((task) => (
             <TaskCard
               key={task.id}
@@ -234,6 +331,8 @@ export function DayPlan() {
           ))}
         </div>
       )}
+
+      <QuickAddTask open={Boolean(editingTask)} task={editingTask} onClose={() => setEditingTask(null)} />
     </div>
   )
 }

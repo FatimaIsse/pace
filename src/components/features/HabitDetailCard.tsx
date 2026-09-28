@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { OverflowMenu, type OverflowMenuItem } from '@/components/ui/OverflowMenu'
 import { DotGrid } from '@/components/ui/DotGrid'
-import { describeRhythm, lightenGoal, suggestHabitProgression } from '@/services/planning'
+import { describeFrequency, describeRhythm, lightenGoal, suggestHabitProgression } from '@/services/planning'
 import { cn } from '@/utils/cn'
 import type { Habit, HabitFeeling, HabitSession } from '@/types'
 import { useFeedback } from '@/context/FeedbackContext'
@@ -68,7 +68,9 @@ export function HabitDetailCard({
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="text-lg font-semibold text-ink">{habit.name}</h3>
-          <p className="text-[15px] text-ink-soft">{describeRhythm(sessions)}</p>
+          <p className="text-[15px] text-ink-soft">
+            {describeFrequency(habit)} · {describeRhythm(sessions)}
+          </p>
         </div>
         <OverflowMenu items={menuItems} label={`More options for ${habit.name}`} />
       </div>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { ChevronDown, ChevronUp, Heart } from 'lucide-react'
+import { CheckCircle2, ChevronDown, ChevronUp, Heart } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { usePreferences } from '@/context/PreferencesContext'
 import { useUI } from '@/context/UIContext'
@@ -12,7 +12,14 @@ import { useGoals } from '@/hooks/useGoals'
 import { useProjects } from '@/hooks/useProjects'
 import { useBrainDump } from '@/hooks/useBrainDump'
 import { useMoveToTomorrow } from '@/hooks/useMoveToTomorrow'
-import { applyCapacityPreferences, deadlineLabel, generateDailyPlan, makeRealistic, personalizedFocus } from '@/services/planning'
+import {
+  applyCapacityPreferences,
+  deadlineLabel,
+  generateDailyPlan,
+  isHabitDueToday,
+  makeRealistic,
+  personalizedFocus,
+} from '@/services/planning'
 import { friendlyGreeting, isToday, todayISO } from '@/utils/date'
 import type { SkipReason, Task } from '@/types'
 import type { InboxRouteState } from '@/components/features/InboxSheet'
@@ -165,7 +172,12 @@ export function Today() {
   const capacity = applyCapacityPreferences(checkIn.energy, checkIn.dayLoad, { planningStyle, dailyCapacityPref })
   const eligibleTasks = activeTasks.filter((t) => t.scheduledFor === todayISO() || t.scheduledFor === null)
   const plan = generateDailyPlan(eligibleTasks, capacity, projects)
-  const activeHabits = habits.filter((h) => !h.archivedAt)
+  // A habit "not due today" (e.g. 3 days a week, none of them today) simply
+  // doesn't show — unless it was already logged today anyway, so completing
+  // an extra day never makes the card vanish mid-tap.
+  const activeHabits = habits.filter(
+    (h) => !h.archivedAt && (hasSessionToday(h.id) || isHabitDueToday(h, sessionsFor(h.id), todayISO())),
+  )
 
   async function handlePlanChange(reason: PlanChangeReason) {
     if (reason === 'need_break') {
@@ -308,10 +320,15 @@ export function Today() {
         <section className="flex flex-col gap-2">
           <button
             onClick={() => setCompletedExpanded((v) => !v)}
-            className="flex items-center gap-1.5 self-start text-[15px] font-semibold text-ink-soft hover:text-ink"
+            aria-expanded={completedExpanded}
+            className="flex items-center gap-2.5 self-start rounded-full border border-primary-text/25 bg-sage-soft py-2.5 pl-3.5 pr-4 text-[15px] font-semibold text-primary-text transition-colors duration-200 hover:bg-sage-soft/70"
           >
-            Completed today · {completedToday.length}
-            {completedExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            <CheckCircle2 size={20} aria-hidden />
+            Completed today
+            <span className="flex h-6 min-w-[24px] items-center justify-center rounded-full bg-primary-text px-1.5 text-xs font-bold text-surface">
+              {completedToday.length}
+            </span>
+            {completedExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
           </button>
           {completedExpanded && (
             <div className="animate-card-in flex flex-col gap-2">

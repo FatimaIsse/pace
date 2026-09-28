@@ -67,11 +67,11 @@ export function Habits() {
           initialName={inboxPrefill?.title}
           goals={goals}
           onCancel={closeForm}
-          onSave={(name, goal, minimum, goalId) => {
+          onSave={(input) => {
             if (editingHabit) {
-              updateHabit(editingHabit.id, { name, goalVersion: goal, minimumVersion: minimum, goalId })
+              updateHabit(editingHabit.id, input)
             } else {
-              addHabit({ name, goalVersion: goal, minimumVersion: minimum, startingGoalVersion: goal, goalId })
+              addHabit({ ...input, startingGoalVersion: input.goalVersion })
               if (inboxPrefill) removeInboxItem(inboxPrefill.dumpId, inboxPrefill.key)
             }
             closeForm()

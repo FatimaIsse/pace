@@ -5,7 +5,7 @@
 // shapes) is decoupled from the UI, a real model call can replace any one of
 // these bodies later without touching a component.
 
-import { differenceInCalendarDays, format, parseISO, subDays } from 'date-fns'
+import { differenceInCalendarDays, format, parseISO, startOfWeek, subDays } from 'date-fns'
 import type {
   BrainDumpItem,
   DailyCapacity,
@@ -656,6 +656,40 @@ export function suggestHabitProgression(
   if (!allEasy) return null
 
   return { proposed: habit.goalVersion.map(bumpTarget) }
+}
+
+export const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+// Whether a habit is "due" today given its regulation — every day, N days a
+// week (any days), or specific weekdays. Once logged today it should stay
+// visible regardless of what this returns (see callers), so completing an
+// "extra" day never makes the card vanish mid-tap.
+export function isHabitDueToday(habit: Habit, habitSessions: HabitSession[], today: string): boolean {
+  const frequency = habit.frequency ?? 'daily'
+  if (frequency === 'daily') return true
+  if (frequency === 'days_of_week') {
+    return (habit.daysOfWeek ?? []).includes(parseISO(today).getDay())
+  }
+  const weekStart = startOfWeek(parseISO(today), { weekStartsOn: 1 })
+  const doneThisWeek = habitSessions.filter(
+    (s) => s.completedVersion !== 'rest' && parseISO(s.date) >= weekStart && s.date <= today,
+  ).length
+  return doneThisWeek < (habit.timesPerWeek ?? 3)
+}
+
+// "Every day" / "3 days a week" / "Mon, Wed, Fri" — one sentence for a
+// habit's regulation, wherever it needs to read as text rather than raw
+// fields.
+export function describeFrequency(habit: Habit): string {
+  const frequency = habit.frequency ?? 'daily'
+  if (frequency === 'daily') return 'Every day'
+  if (frequency === 'per_week') {
+    const n = habit.timesPerWeek ?? 3
+    return `${n} day${n === 1 ? '' : 's'} a week`
+  }
+  const days = habit.daysOfWeek ?? []
+  if (days.length === 0) return 'Some days'
+  return [...days].sort((a, b) => a - b).map((d) => WEEKDAY_LABELS[d]).join(', ')
 }
 
 export function describeRhythm(sessions: HabitSession[], windowDays = 7): string {

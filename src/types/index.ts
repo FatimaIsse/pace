@@ -90,6 +90,10 @@ export interface HabitTarget {
   value: string // e.g. "20 push-ups", "30 sec plank"
 }
 
+// 'daily' (the historical default) | 'per_week' (N days a week, any days) |
+// 'days_of_week' (specific weekdays, 0=Sun..6=Sat)
+export type HabitFrequency = 'daily' | 'per_week' | 'days_of_week'
+
 export interface Habit {
   id: string
   name: string
@@ -97,6 +101,9 @@ export interface Habit {
   minimumVersion: HabitTarget[]
   startingGoalVersion?: HabitTarget[] // snapshot of goalVersion at creation, for "Started X, now Y"
   goalId: string | null // links this habit to the Goal it's the daily action for
+  frequency?: HabitFrequency // absent means 'daily', for habits created before this existed
+  timesPerWeek?: number | null // used when frequency === 'per_week'
+  daysOfWeek?: number[] | null // used when frequency === 'days_of_week'
   createdAt: string
   archivedAt: string | null
 }

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import type { DailyCapacity, Habit, HabitFeeling } from '@/types'
-import { describeRhythm } from '@/services/planning'
+import { describeFrequency, describeRhythm } from '@/services/planning'
 import { cn } from '@/utils/cn'
 import type { HabitSession } from '@/types'
 
@@ -34,7 +34,7 @@ export function HabitCard({
   if (hasSessionToday || step === 'done') {
     return (
       <Card className="animate-card-in">
-        <p className="text-sm font-medium text-ink-faint">Daily</p>
+        <p className="text-sm font-medium text-ink-faint">{describeFrequency(habit)}</p>
         <h3 className="mt-1 text-lg font-semibold text-ink">{habit.name}</h3>
         {linkedGoalTitle && <p className="text-sm text-ink-faint">→ {linkedGoalTitle}</p>}
         <p className="mt-2 text-[15px] text-ink-soft">{describeRhythm(recentSessions)}</p>
@@ -47,7 +47,7 @@ export function HabitCard({
   if (step === 'feeling') {
     return (
       <Card className="animate-card-in">
-        <p className="text-sm font-medium text-ink-faint">Daily</p>
+        <p className="text-sm font-medium text-ink-faint">{describeFrequency(habit)}</p>
         <h3 className="mt-1 text-lg font-semibold text-ink">How did that feel?</h3>
         <div className="mt-4 flex gap-2">
           {FEELING_OPTIONS.map((opt) => (
@@ -69,7 +69,7 @@ export function HabitCard({
 
   return (
     <Card className="animate-card-in">
-      <p className="text-sm font-medium text-ink-faint">Daily</p>
+      <p className="text-sm font-medium text-ink-faint">{describeFrequency(habit)}</p>
       <h3 className="mt-1 text-lg font-semibold text-ink">{habit.name}</h3>
       {linkedGoalTitle && <p className="text-sm text-ink-faint">→ {linkedGoalTitle}</p>}
 
