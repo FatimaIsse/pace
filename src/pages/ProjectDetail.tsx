@@ -210,6 +210,7 @@ export function ProjectDetail() {
           allTasks={tasks}
           projects={projects}
           onStart={() => startFocus(nextStepTask)}
+          onComplete={() => completeTask(nextStepTask.id)}
           onSkip={() => skipTask(nextStepTask.id, 'not_today')}
           onEdit={() => setEditingTask(nextStepTask)}
           onMove={() => updateTask(nextStepTask.id, { scheduledFor: null })}

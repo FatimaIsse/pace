@@ -83,7 +83,19 @@ export function TaskCard({
         )}
       </button>
 
-      {menuItems.length > 0 && <OverflowMenu items={menuItems} label={`More options for ${task.title}`} />}
+      <div className="flex shrink-0 items-center gap-1">
+        {!completed && (
+          <button
+            onClick={onComplete}
+            aria-label={`Mark "${task.title}" done`}
+            className="flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-full border border-border px-3.5 text-sm font-medium text-ink-soft transition-colors duration-200 hover:border-primary-text hover:bg-sage-soft hover:text-primary-text"
+          >
+            <Check size={16} strokeWidth={2.5} aria-hidden />
+            Done
+          </button>
+        )}
+        {menuItems.length > 0 && <OverflowMenu items={menuItems} label={`More options for ${task.title}`} />}
+      </div>
     </div>
   )
 }

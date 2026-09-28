@@ -218,6 +218,7 @@ export function Today() {
             allTasks={tasks}
             projects={projects}
             onStart={() => startFocus(plan.rightNow!)}
+            onComplete={() => completeTask(plan.rightNow!.id)}
             onSkip={() => setSkipTarget(plan.rightNow)}
             onEdit={() => setEditingTask(plan.rightNow)}
             onMove={() => updateTask(plan.rightNow!.id, { scheduledFor: null })}
