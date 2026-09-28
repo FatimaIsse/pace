@@ -2,6 +2,7 @@ import { useTasks } from '@/hooks/useTasks'
 import { useProjects } from '@/hooks/useProjects'
 import { useGoals } from '@/hooks/useGoals'
 import { useHabits } from '@/hooks/useHabits'
+import { suggestScheduleDate } from '@/services/planning'
 import type { BrainDumpItem, Task, TaskPriority } from '@/types'
 
 // Turns one classified fragment into the real thing it sounds like — a task,
@@ -19,17 +20,27 @@ export function useCreateFromClassifiedItem() {
     item: BrainDumpItem,
     source: Task['source'] = 'brain_dump',
     priority?: TaskPriority,
+    dueDate?: string,
   ): Promise<boolean> {
     switch (item.type) {
       case 'task':
-      case 'reminder':
-        await addTask({ title: item.text, duration: item.duration ?? 15, source, priority })
+      case 'reminder': {
+        const duration = item.duration ?? 15
+        await addTask({
+          title: item.text,
+          duration,
+          source,
+          priority,
+          dueDate: dueDate || null,
+          scheduledFor: dueDate ? suggestScheduleDate(dueDate, duration) : undefined,
+        })
         return true
+      }
       case 'project':
-        await addProject(item.text)
+        await addProject(item.text, 'should', dueDate || null)
         return true
       case 'goal':
-        await addGoal({ title: item.text })
+        await addGoal({ title: item.text, dueDate: dueDate || undefined })
         return true
       case 'habit':
         await addHabit({

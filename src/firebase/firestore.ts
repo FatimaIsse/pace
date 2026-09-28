@@ -12,6 +12,7 @@ import {
   setDoc,
   updateDoc,
   writeBatch,
+  type DocumentReference,
   type QueryConstraint,
 } from 'firebase/firestore'
 import { db } from './config'
@@ -137,6 +138,23 @@ export async function deleteAllUserData(uid: string) {
   }
   batch.delete(doc(db, 'users', uid))
   await batch.commit()
+}
+
+// Empties the person's planner — tasks, projects, habits, goals, history —
+// while keeping their account, profile and preferences. Batches are capped at
+// 500 writes by Firestore, so large accounts are cleared in slices.
+export async function clearAllContent(uid: string) {
+  const refs: DocumentReference[] = []
+  for (const name of USER_SUBCOLLECTIONS) {
+    if (name === 'preferences') continue
+    const snap = await getDocs(userCollection(uid, name))
+    snap.forEach((d) => refs.push(d.ref))
+  }
+  for (let i = 0; i < refs.length; i += 400) {
+    const batch = writeBatch(db)
+    refs.slice(i, i + 400).forEach((ref) => batch.delete(ref))
+    await batch.commit()
+  }
 }
 
 // A plain JSON snapshot of everything under users/{uid} — the profile doc

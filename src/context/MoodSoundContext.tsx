@@ -3,14 +3,35 @@ import { getNoiseDataUrl } from '@/utils/noiseGenerator'
 
 export type FocusSound = 'rain' | 'cafe' | 'waves' | 'forest' | 'white_noise' | 'pink_noise' | 'brown_noise'
 
+export type MusicMood = 'calm' | 'focus' | 'uplift' | 'dreamy'
+export type MusicTrack =
+  | 'gymnopedie'
+  | 'nocturne'
+  | 'bach_prelude'
+  | 'goldberg_aria'
+  | 'entertainer'
+  | 'maple_leaf'
+  | 'komiku_dreaming'
+  | 'traumerei'
+
 interface SoundDef {
   label: string
   credit: string
   license: string
 }
 
+export interface MusicDef {
+  title: string
+  artist: string
+  license: string
+  mood: MusicMood
+  src: string
+}
+
 const FADE_MS = 700
+const FADE_STEPS = 12
 const DEFAULT_VOLUME = 0.4
+const DEFAULT_MUSIC_VOLUME = 0.35
 
 // Every option is either a real, license-verified Wikimedia Commons
 // recording stored locally, or (the three noise colors) generated
@@ -26,6 +47,86 @@ export const FOCUS_SOUNDS: Record<FocusSound, SoundDef> = {
 }
 
 export const FOCUS_SOUND_OPTIONS = Object.keys(FOCUS_SOUNDS) as FocusSound[]
+
+// Music is grouped by the mood it suits. Every track is CC0, released to the
+// public domain by its performer, or a US-government (Air Force Band)
+// recording — nothing that needs a paid license. Files are stored locally as
+// AAC (.m4a) so they play in every browser, including Safari.
+export const MUSIC_MOODS: { id: MusicMood; label: string; blurb: string }[] = [
+  { id: 'calm', label: 'Calm', blurb: 'Slow down and breathe' },
+  { id: 'focus', label: 'Focus', blurb: 'Steady and unobtrusive, for deep work' },
+  { id: 'uplift', label: 'Uplift', blurb: 'A little spring in your step' },
+  { id: 'dreamy', label: 'Dreamy', blurb: 'Soft and wandering' },
+]
+
+export const MUSIC_TRACKS: Record<MusicTrack, MusicDef> = {
+  gymnopedie: {
+    title: 'Gymnopédie No. 1',
+    artist: 'Erik Satie · guitar, Michael Laucke',
+    license: 'Public domain',
+    mood: 'calm',
+    src: '/music/gymnopedie.m4a',
+  },
+  nocturne: {
+    title: 'Nocturne in E♭, Op. 9 No. 2',
+    artist: 'Frédéric Chopin',
+    license: 'CC0',
+    mood: 'calm',
+    src: '/music/nocturne.m4a',
+  },
+  bach_prelude: {
+    title: 'Prelude in C major',
+    artist: 'J.S. Bach · Kimiko Ishizaka',
+    license: 'Public domain',
+    mood: 'focus',
+    src: '/music/bach-prelude.m4a',
+  },
+  goldberg_aria: {
+    title: 'Goldberg Variations: Aria',
+    artist: 'J.S. Bach · Kimiko Ishizaka',
+    license: 'CC0',
+    mood: 'focus',
+    src: '/music/goldberg-aria.m4a',
+  },
+  entertainer: {
+    title: 'The Entertainer',
+    artist: 'Scott Joplin · piano roll, 1902',
+    license: 'Public domain',
+    mood: 'uplift',
+    src: '/music/entertainer.m4a',
+  },
+  maple_leaf: {
+    title: 'Maple Leaf Rag',
+    artist: 'Scott Joplin · US Air Force Strolling Strings',
+    license: 'Public domain',
+    mood: 'uplift',
+    src: '/music/maple-leaf.m4a',
+  },
+  komiku_dreaming: {
+    title: 'Dreaming of You',
+    artist: 'Komiku',
+    license: 'CC0',
+    mood: 'dreamy',
+    src: '/music/komiku-dreaming.m4a',
+  },
+  traumerei: {
+    title: 'Träumerei',
+    artist: 'Robert Schumann · Musopen',
+    license: 'Public domain',
+    mood: 'dreamy',
+    src: '/music/traumerei.m4a',
+  },
+}
+
+export const MUSIC_TRACK_IDS = Object.keys(MUSIC_TRACKS) as MusicTrack[]
+
+// When a track ends, the next one in the same mood plays — so picking a mood
+// gives a gentle, endless playlist rather than one song on repeat.
+function nextInMood(current: MusicTrack): MusicTrack {
+  const mood = MUSIC_TRACKS[current].mood
+  const siblings = MUSIC_TRACK_IDS.filter((id) => MUSIC_TRACKS[id].mood === mood)
+  return siblings[(siblings.indexOf(current) + 1) % siblings.length]
+}
 
 function soundSrc(sound: FocusSound): string {
   switch (sound) {
@@ -47,8 +148,97 @@ function soundSrc(sound: FocusSound): string {
 }
 
 const VOLUME_KEY = 'pace-focus-sound-volume'
+const MUSIC_VOLUME_KEY = 'pace-music-volume'
 const USE_DURING_FOCUS_KEY = 'pace-focus-sound-use-during-focus'
 const PREFERRED_SOUND_KEY = 'pace-focus-sound-preferred'
+
+function readNumber(key: string, fallback: number): number {
+  try {
+    const saved = localStorage.getItem(key)
+    return saved ? Number(saved) : fallback
+  } catch {
+    return fallback
+  }
+}
+
+function writeStorage(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value)
+  } catch {
+    // best-effort; a blocked/private-mode localStorage just won't persist
+  }
+}
+
+// One looping-or-playlist audio element with a soft fade in and out. Ambient
+// sound and music each get their own channel so they can play together
+// (rain + piano) at independent volumes.
+function useAudioChannel(volume: number) {
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const fadeInTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const volumeRef = useRef(volume)
+
+  // Live volume changes apply immediately to whatever's currently playing,
+  // without restarting the fade-in.
+  useEffect(() => {
+    volumeRef.current = volume
+    if (audioRef.current && !fadeInTimerRef.current) audioRef.current.volume = volume
+  }, [volume])
+
+  function clearFadeIn() {
+    if (fadeInTimerRef.current) {
+      clearInterval(fadeInTimerRef.current)
+      fadeInTimerRef.current = null
+    }
+  }
+
+  // Uses its own local timer, independent of fadeInTimerRef, which the next
+  // track's fade-in reuses — sharing one timer would cancel the old fade-out
+  // before it ever reached pause().
+  function fadeOutAndStop(audio: HTMLAudioElement) {
+    audio.onended = null
+    const startVolume = audio.volume
+    let step = 0
+    const timer = setInterval(() => {
+      step += 1
+      audio.volume = Math.max(0, startVolume * (1 - step / FADE_STEPS))
+      if (step >= FADE_STEPS) {
+        clearInterval(timer)
+        audio.pause()
+      }
+    }, FADE_MS / FADE_STEPS)
+  }
+
+  function stop() {
+    const current = audioRef.current
+    if (current) fadeOutAndStop(current)
+    audioRef.current = null
+    clearFadeIn()
+  }
+
+  function start(src: string, options: { loop: boolean; onEnded?: () => void; onFail?: () => void }) {
+    const current = audioRef.current
+    if (current) fadeOutAndStop(current)
+
+    const audio = new Audio(src)
+    audio.loop = options.loop
+    audio.volume = 0
+    if (options.onEnded) audio.onended = options.onEnded
+    // A blocked or missing file shouldn't leave the UI claiming it's playing.
+    audio.play().catch(() => options.onFail?.())
+
+    clearFadeIn()
+    let step = 0
+    fadeInTimerRef.current = setInterval(() => {
+      step += 1
+      audio.volume = Math.min(volumeRef.current, (volumeRef.current * step) / FADE_STEPS)
+      if (step >= FADE_STEPS) clearFadeIn()
+    }, FADE_MS / FADE_STEPS)
+
+    audioRef.current = audio
+  }
+
+  return { start, stop }
+}
 
 interface MoodSoundContextValue {
   sound: FocusSound | null
@@ -59,12 +249,18 @@ interface MoodSoundContextValue {
   setUseDuringFocus: (value: boolean) => void
   play: (sound: FocusSound) => void
   stop: () => void
+  track: MusicTrack | null
+  musicVolume: number
+  setMusicVolume: (value: number) => void
+  playTrack: (track: MusicTrack) => void
+  stopTrack: () => void
 }
 
 const MoodSoundContext = createContext<MoodSoundContextValue | undefined>(undefined)
 
 export function MoodSoundProvider({ children }: { children: ReactNode }) {
   const [sound, setSoundState] = useState<FocusSound | null>(null)
+  const [track, setTrackState] = useState<MusicTrack | null>(null)
   const [preferredSound, setPreferredSound] = useState<FocusSound>(() => {
     try {
       const saved = localStorage.getItem(PREFERRED_SOUND_KEY)
@@ -73,14 +269,8 @@ export function MoodSoundProvider({ children }: { children: ReactNode }) {
       return 'rain'
     }
   })
-  const [volume, setVolumeState] = useState(() => {
-    try {
-      const saved = localStorage.getItem(VOLUME_KEY)
-      return saved ? Number(saved) : DEFAULT_VOLUME
-    } catch {
-      return DEFAULT_VOLUME
-    }
-  })
+  const [volume, setVolumeState] = useState(() => readNumber(VOLUME_KEY, DEFAULT_VOLUME))
+  const [musicVolume, setMusicVolumeState] = useState(() => readNumber(MUSIC_VOLUME_KEY, DEFAULT_MUSIC_VOLUME))
   const [useDuringFocus, setUseDuringFocusState] = useState(() => {
     try {
       return localStorage.getItem(USE_DURING_FOCUS_KEY) === 'true'
@@ -89,100 +279,70 @@ export function MoodSoundProvider({ children }: { children: ReactNode }) {
     }
   })
 
-  const audioRef = useRef<HTMLAudioElement | null>(null)
-  const fadeTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
-  function clearFade() {
-    if (fadeTimerRef.current) {
-      clearInterval(fadeTimerRef.current)
-      fadeTimerRef.current = null
-    }
-  }
-
-  // Independent of fadeTimerRef, which the next track's fade-in reuses —
-  // sharing one timer between "fade the old track out" and "fade the new one
-  // in" would cancel the old fade-out before it ever reached pause().
-  function fadeOutAndStop(audio: HTMLAudioElement) {
-    const startVolume = audio.volume
-    const steps = 12
-    let step = 0
-    const timer = setInterval(() => {
-      step += 1
-      audio.volume = Math.max(0, startVolume * (1 - step / steps))
-      if (step >= steps) {
-        clearInterval(timer)
-        audio.pause()
-      }
-    }, FADE_MS / steps)
-  }
+  const ambient = useAudioChannel(volume)
+  const music = useAudioChannel(musicVolume)
 
   function stop() {
-    const current = audioRef.current
-    if (current) fadeOutAndStop(current)
-    audioRef.current = null
+    ambient.stop()
     setSoundState(null)
   }
 
   function play(next: FocusSound) {
-    const current = audioRef.current
-    if (current) fadeOutAndStop(current)
-
-    const audio = new Audio(soundSrc(next))
-    audio.loop = true
-    audio.volume = 0
-    audio.play().catch(() => {
-      // Autoplay can be blocked before any user gesture — the click that
-      // triggered this counts as one, so this is just a safety net.
+    ambient.start(soundSrc(next), {
+      loop: true,
+      onFail: () => setSoundState((current) => (current === next ? null : current)),
     })
-
-    clearFade()
-    const steps = 12
-    let step = 0
-    fadeTimerRef.current = setInterval(() => {
-      step += 1
-      audio.volume = Math.min(volume, (volume * step) / steps)
-      if (step >= steps) clearFade()
-    }, FADE_MS / steps)
-
-    audioRef.current = audio
     setSoundState(next)
     setPreferredSound(next)
-    try {
-      localStorage.setItem(PREFERRED_SOUND_KEY, next)
-    } catch {
-      // best-effort
-    }
+    writeStorage(PREFERRED_SOUND_KEY, next)
   }
 
-  // Live volume changes apply immediately to whatever's currently playing,
-  // without restarting the fade-in.
-  useEffect(() => {
-    if (audioRef.current && !fadeTimerRef.current) {
-      audioRef.current.volume = volume
-    }
-  }, [volume])
+  function stopTrack() {
+    music.stop()
+    setTrackState(null)
+  }
+
+  function playTrack(next: MusicTrack) {
+    music.start(MUSIC_TRACKS[next].src, {
+      loop: false,
+      onEnded: () => playTrack(nextInMood(next)),
+      onFail: () => setTrackState((current) => (current === next ? null : current)),
+    })
+    setTrackState(next)
+  }
 
   function setVolume(value: number) {
     setVolumeState(value)
-    try {
-      localStorage.setItem(VOLUME_KEY, String(value))
-    } catch {
-      // best-effort; a blocked/private-mode localStorage just won't persist
-    }
+    writeStorage(VOLUME_KEY, String(value))
+  }
+
+  function setMusicVolume(value: number) {
+    setMusicVolumeState(value)
+    writeStorage(MUSIC_VOLUME_KEY, String(value))
   }
 
   function setUseDuringFocus(value: boolean) {
     setUseDuringFocusState(value)
-    try {
-      localStorage.setItem(USE_DURING_FOCUS_KEY, String(value))
-    } catch {
-      // best-effort
-    }
+    writeStorage(USE_DURING_FOCUS_KEY, String(value))
   }
 
   return (
     <MoodSoundContext.Provider
-      value={{ sound, preferredSound, volume, setVolume, useDuringFocus, setUseDuringFocus, play, stop }}
+      value={{
+        sound,
+        preferredSound,
+        volume,
+        setVolume,
+        useDuringFocus,
+        setUseDuringFocus,
+        play,
+        stop,
+        track,
+        musicVolume,
+        setMusicVolume,
+        playTrack,
+        stopTrack,
+      }}
     >
       {children}
     </MoodSoundContext.Provider>

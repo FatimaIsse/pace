@@ -29,8 +29,15 @@ export function OverflowMenu({
     function handleClickOutside(e: MouseEvent) {
       if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false)
     }
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false)
+    }
     document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    document.addEventListener('keydown', handleEscape)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleEscape)
+    }
   }, [open])
 
   return (
@@ -42,7 +49,8 @@ export function OverflowMenu({
         }}
         aria-label={label}
         aria-expanded={open}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-faint transition-colors duration-200 hover:bg-soft hover:text-ink-soft"
+        aria-haspopup="menu"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-faint transition-colors duration-200 hover:bg-soft hover:text-ink-soft md:h-9 md:w-9"
       >
         <MoreHorizontal size={18} />
       </button>
@@ -50,7 +58,7 @@ export function OverflowMenu({
       {open && (
         <div
           className={cn(
-            'animate-card-in absolute top-10 z-20 w-44 rounded-[var(--radius-card)] border border-border bg-surface p-1.5 shadow-lg',
+            'animate-card-in absolute top-11 z-20 w-44 md:top-10 rounded-[var(--radius-card)] border border-border bg-surface p-1.5 shadow-lg',
             align === 'left' ? 'left-0' : 'right-0',
           )}
         >
@@ -63,7 +71,7 @@ export function OverflowMenu({
                 item.onClick()
               }}
               className={cn(
-                'flex w-full items-center gap-2.5 rounded-[var(--radius-button)] px-2.5 py-2 text-left text-sm font-medium transition-colors duration-200 hover:bg-soft',
+                'flex min-h-[44px] w-full items-center gap-2.5 rounded-[var(--radius-button)] px-2.5 py-2 text-left text-sm font-medium transition-colors duration-200 hover:bg-soft',
                 item.variant === 'danger' ? 'text-error' : 'text-ink-soft hover:text-ink',
               )}
             >

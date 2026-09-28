@@ -78,6 +78,7 @@ export interface Project {
   notes: string
   status: ProjectStatus
   priority: TaskPriority | LegacyTaskPriority
+  dueDate?: string | null // optional target date (ISO day) — missing it raises the "missed" banner
   createdAt: string
   archivedAt: string | null
 }
@@ -129,6 +130,7 @@ export interface Goal {
   status: ProjectStatus
   milestones: Milestone[]
   linkedProjectIds: string[]
+  dueDate?: string | null // optional finish-by date (ISO day) — missing it raises the "missed" banner
   createdAt: string
 }
 

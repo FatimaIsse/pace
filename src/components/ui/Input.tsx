@@ -47,7 +47,7 @@ function VoiceButton({ listening, onClick }: { listening: boolean; onClick: () =
       onClick={onClick}
       aria-label={listening ? 'Stop voice input' : 'Start voice input'}
       className={cn(
-        'flex h-8 w-8 items-center justify-center rounded-full transition-colors duration-200',
+        'flex h-10 w-10 items-center justify-center rounded-full transition-colors duration-200',
         listening ? 'bg-error text-white' : 'text-ink-faint hover:bg-soft hover:text-ink-soft',
       )}
     >

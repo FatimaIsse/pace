@@ -4,8 +4,10 @@ import { Card } from '@/components/ui/Card'
 import { StatusProgress } from '@/components/ui/ProgressBar'
 import { OverflowMenu, type OverflowMenuItem } from '@/components/ui/OverflowMenu'
 import { PriorityDot } from '@/components/ui/PriorityDot'
-import { normalizeTaskPriority, PRIORITY_LABEL } from '@/services/planning'
+import { DeadlineText } from '@/components/ui/DeadlineText'
+import { deadlineLabel, normalizeTaskPriority, PRIORITY_LABEL } from '@/services/planning'
 import type { Project } from '@/types'
+import { useFeedback } from '@/context/FeedbackContext'
 
 export function ProjectCard({
   project,
@@ -16,8 +18,19 @@ export function ProjectCard({
   taskCount: number
   onRemove: () => void
 }) {
-  function handleRemove() {
-    if (window.confirm(`Delete "${project.name}"? This can't be undone.`)) onRemove()
+  const { confirm } = useFeedback()
+
+  async function handleRemove() {
+    if (
+      await confirm({
+        title: `Delete "${project.name}"?`,
+        description: "This can't be undone. Its tasks stay in your list.",
+        confirmLabel: 'Delete',
+        destructive: true,
+      })
+    ) {
+      onRemove()
+    }
   }
 
   const menuItems: OverflowMenuItem[] = [
@@ -25,6 +38,7 @@ export function ProjectCard({
   ]
 
   const priority = normalizeTaskPriority(project.priority)
+  const deadline = project.status !== 'done' ? deadlineLabel(project.dueDate ?? null) : null
 
   return (
     <Link to={`/projects/${project.id}`}>
@@ -37,6 +51,12 @@ export function ProjectCard({
         <p className="mt-0.5 flex items-center gap-1.5 text-sm text-ink-faint">
           <PriorityDot priority={priority} />
           {PRIORITY_LABEL[priority]} · {taskCount} {taskCount === 1 ? 'task' : 'tasks'}
+          {deadline && (
+            <>
+              {' · '}
+              <DeadlineText dueDate={project.dueDate ?? null} label={deadline} />
+            </>
+          )}
         </p>
         <StatusProgress status={project.status} className="mt-3" />
       </Card>

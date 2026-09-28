@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
 import { Input, Textarea } from '@/components/ui/Input'
 import type { ProjectStatus, WeeklyFocus } from '@/types'
+import { useFeedback } from '@/context/FeedbackContext'
 
 const STATUS_CYCLE: ProjectStatus[] = ['just_started', 'making_progress', 'almost_there', 'done']
 
@@ -50,8 +51,19 @@ export function WeekPlan() {
   const [adding, setAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
 
-  function handleRemove(item: WeeklyFocus) {
-    if (window.confirm(`Delete "${item.title}"? This can't be undone.`)) removeWeeklyFocus(item.id)
+  const { confirm } = useFeedback()
+
+  async function handleRemove(item: WeeklyFocus) {
+    if (
+      await confirm({
+        title: `Delete "${item.title}"?`,
+        description: "This can't be undone.",
+        confirmLabel: 'Delete',
+        destructive: true,
+      })
+    ) {
+      removeWeeklyFocus(item.id)
+    }
   }
 
   function cycleStatus(item: WeeklyFocus) {
@@ -88,14 +100,14 @@ export function WeekPlan() {
                 <button
                   onClick={() => setEditingId(item.id)}
                   aria-label={`Edit ${item.title}`}
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-ink-faint hover:bg-soft hover:text-ink"
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-ink-faint hover:bg-soft hover:text-ink md:h-8 md:w-8"
                 >
                   <Pencil size={16} />
                 </button>
                 <button
                   onClick={() => handleRemove(item)}
                   aria-label={`Delete ${item.title}`}
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-ink-faint hover:bg-soft hover:text-error"
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-ink-faint hover:bg-soft hover:text-error md:h-8 md:w-8"
                 >
                   <Trash2 size={16} />
                 </button>

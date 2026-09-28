@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { createDoc, patchDoc, removeDoc, subscribeToCollection } from '@/firebase/firestore'
+import { createDoc, patchDoc, removeDoc, setDocById, subscribeToCollection } from '@/firebase/firestore'
 import { useAuth } from '@/context/AuthContext'
+import { useFeedback } from '@/context/FeedbackContext'
 import type { SkipReason, Task } from '@/types'
 import { todayISO } from '@/utils/date'
 
@@ -55,6 +56,7 @@ function toTask(input: NewTaskInput): Omit<Task, 'id'> {
 
 export function useTasks() {
   const { user } = useAuth()
+  const { toast } = useFeedback()
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -83,7 +85,13 @@ export function useTasks() {
   }
 
   async function completeTask(taskId: string) {
+    const task = tasks.find((t) => t.id === taskId)
     await updateTask(taskId, { status: 'done', completedAt: new Date().toISOString() })
+    toast({
+      message: task ? `Done: ${task.title}` : 'Marked done',
+      actionLabel: 'Undo',
+      onAction: () => void uncompleteTask(taskId),
+    })
   }
 
   async function uncompleteTask(taskId: string) {
@@ -100,9 +108,20 @@ export function useTasks() {
     })
   }
 
+  // Deleting is instantly reversible: the toast's Undo writes the same
+  // document (same id, so anything that depends on it still lines up) back.
   async function removeTask(taskId: string) {
     if (!user) return
+    const task = tasks.find((t) => t.id === taskId)
     await removeDoc(user.uid, COLLECTION, taskId)
+    if (task) {
+      const { id, ...data } = task
+      toast({
+        message: `Deleted "${task.title}"`,
+        actionLabel: 'Undo',
+        onAction: () => void setDocById(user.uid, COLLECTION, id, data),
+      })
+    }
   }
 
   async function archiveTask(taskId: string) {

@@ -51,6 +51,7 @@ export function MonthPlan() {
             goal={goal}
             onRename={(newTitle) => updateGoal(goal.id, { title: newTitle })}
             onStatusChange={(status) => updateGoal(goal.id, { status })}
+            onDueDateChange={(dueDate) => updateGoal(goal.id, { dueDate })}
             onToggleMilestone={(milestoneId) => toggleMilestone(goal, milestoneId)}
             onAddMilestone={(label) => addMilestone(goal, label)}
             onRemoveMilestone={(milestoneId) => removeMilestone(goal, milestoneId)}

@@ -5,6 +5,7 @@
 // shapes) is decoupled from the UI, a real model call can replace any one of
 // these bodies later without touching a component.
 
+import { differenceInCalendarDays, format, parseISO, subDays } from 'date-fns'
 import type {
   BrainDumpItem,
   DailyCapacity,
@@ -67,12 +68,12 @@ export function isTaskBlocked(task: Task, allTasks: Task[]): boolean {
 // Deadline urgency
 // ---------------------------------------------------------------------------
 
-function daysUntil(dueDate: string): number {
-  const due = new Date(dueDate)
-  due.setHours(0, 0, 0, 0)
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  return Math.round((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+// Whole calendar days from today to a plain "yyyy-MM-dd" date. parseISO reads
+// a date-only string as LOCAL midnight — `new Date('2026-09-28')` is UTC
+// midnight, which in the Americas lands on the previous evening and made
+// "due today" read as "overdue by 1 day".
+export function daysUntil(dueDate: string): number {
+  return differenceInCalendarDays(parseISO(dueDate), new Date())
 }
 
 // Calm, specific label text — never a bare "OVERDUE" shout. Null means the
@@ -119,15 +120,9 @@ function deadlineUrgencyScore(dueDate: string | null): number {
 // how long the task will take, instead of defaulting to the deadline itself.
 export function suggestScheduleDate(dueDate: string, durationMinutes: number): string {
   const bufferDays = durationMinutes >= 90 ? 2 : 1
-  const due = new Date(dueDate)
-  const suggested = new Date(due)
-  suggested.setDate(suggested.getDate() - bufferDays)
-
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  if (suggested.getTime() < today.getTime()) return dueDate
-
-  return suggested.toISOString().slice(0, 10)
+  const suggested = subDays(parseISO(dueDate), bufferDays)
+  if (differenceInCalendarDays(suggested, new Date()) < 0) return dueDate
+  return format(suggested, 'yyyy-MM-dd')
 }
 
 // ---------------------------------------------------------------------------
@@ -623,7 +618,7 @@ export function generateWeeklyInsights(params: {
   }
 
   if (habitDaysActive > 0) {
-    push(`${habitDaysActive} movement day${habitDaysActive === 1 ? '' : 's'} this week.`, 'completion')
+    push(`${habitDaysActive} habit day${habitDaysActive === 1 ? '' : 's'} this week.`, 'completion')
   }
 
   if (focusedMinutes > 0) {

@@ -26,6 +26,7 @@ export function Projects() {
   const [creating, setCreating] = useState(false)
   const [name, setName] = useState('')
   const [priority, setPriority] = useState<TaskPriority>('should')
+  const [dueDate, setDueDate] = useState('')
   const [inboxPrefill, setInboxPrefill] = useState<{ dumpId: string; key: string } | null>(null)
 
   const activeProjects = projects.filter((p) => !p.archivedAt)
@@ -44,15 +45,17 @@ export function Projects() {
     setCreating(false)
     setName('')
     setPriority('should')
+    setDueDate('')
     setInboxPrefill(null)
   }
 
   async function handleAdd() {
     if (!name.trim()) return
-    await addProject(name.trim(), priority)
+    await addProject(name.trim(), priority, dueDate || null)
     if (inboxPrefill) await removeInboxItem(inboxPrefill.dumpId, inboxPrefill.key)
     setName('')
     setPriority('should')
+    setDueDate('')
     setCreating(false)
     setInboxPrefill(null)
   }
@@ -66,7 +69,7 @@ export function Projects() {
       {isEmpty && (
         <EmptyState
           title="No projects yet"
-          subtitle="Projects are for things that take more than one step — like moving, a portfolio, or planning a trip."
+          subtitle="Projects are for things that take more than one step — like planning a trip, a home refresh, or learning a new skill."
           action={
             <Button size="sm" onClick={() => setCreating(true)}>
               Create your first project
@@ -107,6 +110,13 @@ export function Projects() {
               ))}
             </div>
           </div>
+          <Input
+            type="date"
+            label="Due date (optional)"
+            hint="If it slips past this day, Pace lets you know."
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+          />
           <div className="flex gap-2">
             <Button variant="secondary" className="flex-1" onClick={cancelCreate}>
               Cancel

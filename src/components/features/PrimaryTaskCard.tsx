@@ -33,8 +33,9 @@ export function PrimaryTaskCard({
 }) {
   const [showWhy, setShowWhy] = useState(false)
 
+  // No confirm box: deleting a task shows an Undo toast instead (see useTasks).
   function handleRemove() {
-    if (window.confirm(`Delete "${task.title}"? This can't be undone.`)) onRemove?.()
+    onRemove?.()
   }
 
   const menuItems: OverflowMenuItem[] = [{ label: 'Skip', icon: <SkipForward size={15} />, onClick: onSkip }]

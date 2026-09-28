@@ -78,7 +78,7 @@ export function Onboarding() {
               autoFocus
               rows={6}
               className="text-left"
-              placeholder="I'm starting placement, moving, and trying to build an exercise habit. I get overwhelmed when I have too much to do."
+              placeholder="I'm juggling work and life, trying to build a healthier routine, and I get overwhelmed when I have too much to do."
               value={lifeContext}
               onChange={(e) => setLifeContext(e.target.value)}
             />

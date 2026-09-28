@@ -35,7 +35,7 @@ export function Me() {
           <button
             onClick={() => setEditOpen(true)}
             aria-label="Edit profile"
-            className="absolute -bottom-1 -right-1 flex h-9 w-9 items-center justify-center rounded-full border-2 border-canvas bg-primary text-on-primary transition-colors duration-200 hover:bg-primary-hover"
+            className="absolute -bottom-1 -right-1 flex h-11 w-11 items-center justify-center rounded-full border-2 border-canvas bg-primary text-on-primary transition-colors duration-200 hover:bg-primary-hover"
           >
             <Camera size={15} />
           </button>

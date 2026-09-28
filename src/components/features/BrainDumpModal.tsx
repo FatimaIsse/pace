@@ -87,7 +87,7 @@ export function BrainDumpModal() {
             autoFocus
             voiceInput
             rows={6}
-            placeholder="I need to pack, answer an email, prepare for placement, workout..."
+            placeholder="I need to reply to emails, book a dentist appointment, plan the weekend, go for a walk…"
             value={text}
             onChange={(e) => setText(e.target.value)}
           />

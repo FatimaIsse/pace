@@ -5,8 +5,11 @@ import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { STATUS_LABEL } from '@/components/ui/ProgressBar'
+import { DeadlineText } from '@/components/ui/DeadlineText'
+import { deadlineLabel } from '@/services/planning'
 import { cn } from '@/utils/cn'
 import type { Goal, ProjectStatus } from '@/types'
+import { useFeedback } from '@/context/FeedbackContext'
 
 const MILESTONE_PREVIEW_COUNT = 5
 
@@ -24,6 +27,7 @@ export function GoalCard({
   goal,
   onRename,
   onStatusChange,
+  onDueDateChange,
   onToggleMilestone,
   onAddMilestone,
   onRemoveMilestone,
@@ -33,6 +37,7 @@ export function GoalCard({
   goal: Goal
   onRename: (title: string) => void
   onStatusChange: (status: ProjectStatus) => void
+  onDueDateChange: (dueDate: string | null) => void
   onToggleMilestone: (milestoneId: string) => void
   onAddMilestone: (label: string) => void
   onRemoveMilestone: (milestoneId: string) => void
@@ -75,8 +80,19 @@ export function GoalCard({
     setEditingMilestoneId(null)
   }
 
-  function handleRemove() {
-    if (window.confirm(`Delete "${goal.title}"? This can't be undone.`)) onRemove()
+  const { confirm } = useFeedback()
+
+  async function handleRemove() {
+    if (
+      await confirm({
+        title: `Delete "${goal.title}"?`,
+        description: "This can't be undone.",
+        confirmLabel: 'Delete',
+        destructive: true,
+      })
+    ) {
+      onRemove()
+    }
   }
 
   return (
@@ -88,21 +104,21 @@ export function GoalCard({
             setEditingTitle(true)
           }}
           aria-label={`Edit ${goal.title}`}
-          className="flex h-8 w-8 items-center justify-center rounded-full text-ink-faint hover:bg-soft hover:text-ink"
+          className="flex h-10 w-10 items-center justify-center rounded-full text-ink-faint hover:bg-soft hover:text-ink md:h-8 md:w-8"
         >
           <Pencil size={16} />
         </button>
         <button
           onClick={handleRemove}
           aria-label={`Delete ${goal.title}`}
-          className="flex h-8 w-8 items-center justify-center rounded-full text-ink-faint hover:bg-soft hover:text-error"
+          className="flex h-10 w-10 items-center justify-center rounded-full text-ink-faint hover:bg-soft hover:text-error md:h-8 md:w-8"
         >
           <Trash2 size={16} />
         </button>
       </div>
 
       {editingTitle ? (
-        <div className="flex items-center gap-2 pr-16">
+        <div className="flex items-center gap-2 pr-24 md:pr-16">
           <Input
             autoFocus
             value={titleInput}
@@ -114,11 +130,29 @@ export function GoalCard({
           </Button>
         </div>
       ) : (
-        <div className="pr-16">
+        <div className="pr-24 md:pr-16">
           <p className="text-[17px] font-semibold text-ink">{goal.title}</p>
           {timeframeLabel(goal) && <p className="text-sm text-ink-faint">{timeframeLabel(goal)}</p>}
         </div>
       )}
+
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <label htmlFor={`goal-due-${goal.id}`} className="text-sm text-ink-faint">
+          Finish by
+        </label>
+        <input
+          id={`goal-due-${goal.id}`}
+          type="date"
+          value={goal.dueDate ?? ''}
+          onChange={(e) => onDueDateChange(e.target.value || null)}
+          className="h-11 rounded-[var(--radius-button)] border border-border bg-surface px-3 text-sm text-ink sm:h-10"
+        />
+        {goal.dueDate && goal.status !== 'done' && deadlineLabel(goal.dueDate) && (
+          <span className="text-sm text-ink-faint">
+            <DeadlineText dueDate={goal.dueDate} label={deadlineLabel(goal.dueDate)!} />
+          </span>
+        )}
+      </div>
 
       <div className="flex flex-wrap gap-2">
         {(Object.entries(STATUS_LABEL) as [ProjectStatus, string][]).map(([value, label]) => (
@@ -179,12 +213,17 @@ export function GoalCard({
               <li key={m.id} className="group flex items-center gap-2">
                 <button
                   onClick={() => onToggleMilestone(m.id)}
-                  className={cn(
-                    'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-border text-transparent transition-colors duration-200 hover:border-primary-text',
-                    m.done && 'border-primary-text bg-primary-text text-white',
-                  )}
+                  aria-label={m.done ? `Mark "${m.label}" not done` : `Mark "${m.label}" done`}
+                  className="group -m-3 flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
                 >
-                  <Check size={11} strokeWidth={3} />
+                  <span
+                    className={cn(
+                      'flex h-5 w-5 items-center justify-center rounded-full border-2 border-border text-transparent transition-colors duration-200 group-hover:border-primary-text',
+                      m.done && 'border-primary-text bg-primary-text text-white',
+                    )}
+                  >
+                    <Check size={11} strokeWidth={3} />
+                  </span>
                 </button>
                 <span className={cn('flex-1 text-sm text-ink-soft', m.done && 'text-ink-faint line-through')}>
                   {m.label}
@@ -192,7 +231,7 @@ export function GoalCard({
                 <button
                   onClick={() => startEditMilestone(m.id, m.label)}
                   aria-label={`Edit milestone ${m.label}`}
-                  className="text-ink-faint opacity-0 transition-opacity hover:text-ink group-hover:opacity-100"
+                  className="flex h-10 w-10 items-center justify-center text-ink-faint transition-opacity hover:text-ink focus-visible:opacity-100 md:h-8 md:w-8 md:opacity-0 md:group-hover:opacity-100"
                 >
                   <Pencil size={13} />
                 </button>

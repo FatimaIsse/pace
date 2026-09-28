@@ -40,6 +40,7 @@ export interface NewGoalOptions {
   weekOf?: string
   startDate?: string
   endDate?: string
+  dueDate?: string
 }
 
 export function NewGoalForm({
@@ -57,6 +58,7 @@ export function NewGoalForm({
   const [weekOf, setWeekOf] = useState(currentWeekKey())
   const [startDate, setStartDate] = useState(todayISO())
   const [endDate, setEndDate] = useState('')
+  const [dueDate, setDueDate] = useState('')
   const [milestoneInputs, setMilestoneInputs] = useState<string[]>([''])
 
   function updateMilestone(index: number, value: string) {
@@ -91,6 +93,7 @@ export function NewGoalForm({
       weekOf: timeframe === 'week' ? weekOf : undefined,
       startDate: timeframe === 'custom' ? startDate : undefined,
       endDate: timeframe === 'custom' ? endDate : undefined,
+      dueDate: timeframe !== 'custom' && dueDate ? dueDate : undefined,
     })
   }
 
@@ -180,6 +183,16 @@ export function NewGoalForm({
             className="flex-1"
           />
         </div>
+      )}
+
+      {timeframe !== 'custom' && (
+        <Input
+          type="date"
+          label="Finish by (optional)"
+          hint="If it slips past this day, Pace lets you know."
+          value={dueDate}
+          onChange={(e) => setDueDate(e.target.value)}
+        />
       )}
 
       <div className="flex flex-col gap-3">

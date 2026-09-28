@@ -1,3 +1,4 @@
+import { format, subDays } from 'date-fns'
 import type { HabitSession } from '@/types'
 import { cn } from '@/utils/cn'
 
@@ -9,9 +10,9 @@ export function DotGrid({ sessions, days = 7 }: { sessions: HabitSession[]; days
   const activeDates = new Set(sessions.filter((s) => s.completedVersion !== 'rest').map((s) => s.date))
 
   const cells = Array.from({ length: days }, (_, i) => {
-    const d = new Date(today)
-    d.setDate(d.getDate() - (days - 1 - i))
-    const iso = d.toISOString().slice(0, 10)
+    // Local calendar day — toISOString() is UTC and shifts the dot by one day
+    // for anyone whose local date differs from the UTC date.
+    const iso = format(subDays(today, days - 1 - i), 'yyyy-MM-dd')
     return { iso, active: activeDates.has(iso) }
   })
 

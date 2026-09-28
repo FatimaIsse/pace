@@ -6,7 +6,14 @@ import { useTasks } from '@/hooks/useTasks'
 import { useCheckIn } from '@/hooks/useCheckIn'
 import { useUI } from '@/context/UIContext'
 import { usePreferences } from '@/context/PreferencesContext'
-import { applyCapacityPreferences, normalizeTaskPriority, PRIORITY_LABEL, pickNextProjectStep } from '@/services/planning'
+import {
+  applyCapacityPreferences,
+  deadlineLabel,
+  normalizeTaskPriority,
+  PRIORITY_LABEL,
+  pickNextProjectStep,
+} from '@/services/planning'
+import { DeadlineText } from '@/components/ui/DeadlineText'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
@@ -17,6 +24,7 @@ import { TaskCard } from '@/components/features/TaskCard'
 import { QuickAddTask } from '@/components/features/QuickAddTask'
 import type { ProjectStatus, Task, TaskPriority } from '@/types'
 import { cn } from '@/utils/cn'
+import { useFeedback } from '@/context/FeedbackContext'
 
 const STATUS_OPTIONS: { value: ProjectStatus; label: string }[] = [
   { value: 'just_started', label: 'Just started' },
@@ -34,6 +42,7 @@ export function ProjectDetail() {
   const { tasks, addTask, completeTask, uncompleteTask, skipTask, updateTask, removeTask } = useTasks()
   const { todayCheckIn } = useCheckIn()
   const { startFocus } = useUI()
+  const { confirm } = useFeedback()
   const { planningStyle, dailyCapacityPref } = usePreferences()
   const [addOpen, setAddOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
@@ -73,9 +82,15 @@ export function ProjectDetail() {
     setCreatingStep(false)
   }
 
-  function handleDeleteProject() {
+  async function handleDeleteProject() {
     if (!project) return
-    if (window.confirm(`Delete "${project.name}"? This can't be undone.`)) {
+    const confirmed = await confirm({
+      title: `Delete "${project.name}"?`,
+      description: "This can't be undone. Its tasks stay in your list.",
+      confirmLabel: 'Delete',
+      destructive: true,
+    })
+    if (confirmed) {
       removeProject(project.id)
       navigate('/projects')
     }
@@ -169,6 +184,21 @@ export function ProjectDetail() {
               {PRIORITY_LABEL[p]}
             </button>
           ))}
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-end gap-x-4 gap-y-1">
+          <Input
+            type="date"
+            label="Due date (optional)"
+            value={project.dueDate ?? ''}
+            onChange={(e) => updateProject(project.id, { dueDate: e.target.value || null })}
+            className="w-full sm:w-[220px]"
+          />
+          {project.dueDate && project.status !== 'done' && deadlineLabel(project.dueDate) && (
+            <p className="pb-3 text-sm text-ink-faint">
+              <DeadlineText dueDate={project.dueDate} label={deadlineLabel(project.dueDate)!} />
+            </p>
+          )}
         </div>
       </div>
 

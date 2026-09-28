@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Sheet } from '@/components/ui/Sheet'
-import { Textarea } from '@/components/ui/Input'
+import { Input, Textarea } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { PriorityDot } from '@/components/ui/PriorityDot'
 import { useUI } from '@/context/UIContext'
@@ -37,6 +37,7 @@ export function SmartAddSheet() {
   const [showMore, setShowMore] = useState(false)
   const [duration, setDuration] = useState<number | null>(null)
   const [priority, setPriority] = useState<TaskPriority>('should')
+  const [dueDate, setDueDate] = useState('')
   const [confirmingDone, setConfirmingDone] = useState(false)
   const [created, setCreated] = useState<{ type: BrainDumpItem['type'] } | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -52,6 +53,7 @@ export function SmartAddSheet() {
     setShowMore(false)
     setDuration(null)
     setPriority('should')
+    setDueDate('')
     setConfirmingDone(false)
     setCreated(null)
   }
@@ -67,6 +69,7 @@ export function SmartAddSheet() {
       { type: effectiveType, text: trimmed, duration: effectiveType === 'task' ? effectiveDuration : undefined },
       'manual',
       effectiveType === 'task' ? priority : undefined,
+      effectiveType === 'habit' ? undefined : dueDate || undefined,
     )
     setSubmitting(false)
     setCreated({ type: effectiveType })
@@ -129,7 +132,7 @@ export function SmartAddSheet() {
             autoFocus
             voiceInput
             rows={2}
-            placeholder="I need to send my placement report Friday…"
+            placeholder="e.g. Call the dentist on Friday…"
             value={text}
             onChange={(e) => setText(e.target.value)}
           />
@@ -152,6 +155,16 @@ export function SmartAddSheet() {
                 ))}
               </div>
             </div>
+          )}
+
+          {effectiveType !== 'habit' && trimmed.length > 2 && (
+            <Input
+              type="date"
+              label="Due date (optional)"
+              hint="If it slips past this day, Pace lets you know."
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+            />
           )}
 
           {effectiveType === 'task' && trimmed.length > 2 && (

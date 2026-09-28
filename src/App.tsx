@@ -4,6 +4,7 @@ import { PreferencesProvider } from '@/context/PreferencesContext'
 import { ThemeProvider } from '@/context/ThemeContext'
 import { UIProvider } from '@/context/UIContext'
 import { MoodSoundProvider } from '@/context/MoodSoundContext'
+import { FeedbackProvider } from '@/context/FeedbackContext'
 import { ProtectedRoute, OnboardingRoute, PublicOnlyRoute, RootRedirect } from '@/routes/RouteGuards'
 import { AppShell } from '@/layouts/AppShell'
 import { FirebaseSetupNotice } from '@/components/FirebaseSetupNotice'
@@ -15,6 +16,7 @@ import { ForgotPassword } from '@/pages/auth/ForgotPassword'
 import { Onboarding } from '@/pages/Onboarding'
 import { Today } from '@/pages/Today'
 import { Plan } from '@/pages/Plan'
+import { Calendar } from '@/pages/Calendar'
 import { Habits } from '@/pages/Habits'
 import { Projects } from '@/pages/Projects'
 import { ProjectDetail } from '@/pages/ProjectDetail'
@@ -42,6 +44,7 @@ export default function App() {
           <PreferencesProvider>
             <UIProvider>
               <MoodSoundProvider>
+              <FeedbackProvider>
               <Routes>
                 <Route path="/" element={<RootRedirect />} />
                 <Route path="/privacy" element={<Privacy />} />
@@ -62,6 +65,7 @@ export default function App() {
                   <Route element={<AppShell />}>
                     <Route path="/today" element={<Today />} />
                     <Route path="/plan" element={<Plan />} />
+                    <Route path="/calendar" element={<Calendar />} />
                     <Route path="/habits" element={<Habits />} />
                     <Route path="/projects" element={<Projects />} />
                     <Route path="/projects/:projectId" element={<ProjectDetail />} />
@@ -74,6 +78,7 @@ export default function App() {
 
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
+              </FeedbackProvider>
               </MoodSoundProvider>
             </UIProvider>
           </PreferencesProvider>

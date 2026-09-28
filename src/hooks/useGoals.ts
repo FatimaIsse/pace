@@ -30,6 +30,7 @@ interface AddGoalOptions {
   weekOf?: string // used when timeframe is 'week'
   startDate?: string // used when timeframe is 'custom'
   endDate?: string // used when timeframe is 'custom'
+  dueDate?: string // optional finish-by date; a custom range's end date counts as one automatically
 }
 
 export function useGoals() {
@@ -88,6 +89,7 @@ export function useGoals() {
       status: 'just_started',
       milestones: options.milestones ?? [],
       linkedProjectIds: [],
+      dueDate: options.dueDate || (timeframe === 'custom' ? endDate : null),
       createdAt: new Date().toISOString(),
     }
     return createDoc(user.uid, GOALS, goal)

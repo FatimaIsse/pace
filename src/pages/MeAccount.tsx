@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { format } from 'date-fns'
-import { ArrowLeft, ChevronRight, Download, Sparkles } from 'lucide-react'
+import { ArrowLeft, ChevronRight, Download, Sparkles, Trash2 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { SpotifyConnect } from '@/components/features/SpotifyConnect'
-import { exportAllUserData } from '@/firebase/firestore'
+import { clearAllContent, exportAllUserData } from '@/firebase/firestore'
+import { useFeedback } from '@/context/FeedbackContext'
 import { seedDemoData } from '@/services/seed'
 import {
   authErrorMessage,
@@ -20,6 +21,7 @@ import {
 export function MeAccount() {
   const navigate = useNavigate()
   const { user, profile } = useAuth()
+  const { confirm, toast } = useFeedback()
 
   const [changingEmail, setChangingEmail] = useState(false)
   const [emailPassword, setEmailPassword] = useState('')
@@ -38,6 +40,7 @@ export function MeAccount() {
   const [exporting, setExporting] = useState(false)
   const [seeding, setSeeding] = useState(false)
   const [seeded, setSeeded] = useState(false)
+  const [clearing, setClearing] = useState(false)
 
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -102,6 +105,27 @@ export function MeAccount() {
     await seedDemoData(user.uid)
     setSeeding(false)
     setSeeded(true)
+    toast({ message: 'Example data added. Explore Today, Calendar and My Stats.' })
+  }
+
+  async function handleClear() {
+    if (!user) return
+    const ok = await confirm({
+      title: 'Clear all your data?',
+      description:
+        "This removes every task, project, habit, goal and all your history, so you can start completely fresh. Your account stays. This can't be undone.",
+      confirmLabel: 'Clear everything',
+      destructive: true,
+    })
+    if (!ok) return
+    setClearing(true)
+    try {
+      await clearAllContent(user.uid)
+      setSeeded(false)
+      toast({ message: "All cleared. You're starting fresh." })
+    } finally {
+      setClearing(false)
+    }
   }
 
   async function handleDeleteAccount() {
@@ -275,8 +299,24 @@ export function MeAccount() {
             className="flex min-h-[48px] items-center gap-3 border-t border-border py-3 text-left text-[15px] font-medium text-ink"
           >
             <Sparkles size={18} className="text-ink-faint" />
-            <span className="flex-1">
-              {seeded ? 'Example data loaded' : seeding ? 'Loading…' : 'Load example data'}
+            <span className="flex flex-1 flex-col">
+              <span>{seeded ? 'Example data loaded' : seeding ? 'Loading…' : 'Load example data'}</span>
+              <span className="text-sm font-normal text-ink-faint">
+                A few sample tasks, a project, a habit and a week of history to explore.
+              </span>
+            </span>
+          </button>
+          <button
+            onClick={handleClear}
+            disabled={clearing}
+            className="flex min-h-[48px] items-center gap-3 border-t border-border py-3 text-left text-[15px] font-medium text-error"
+          >
+            <Trash2 size={18} />
+            <span className="flex flex-1 flex-col">
+              <span>{clearing ? 'Clearing…' : 'Clear all my data'}</span>
+              <span className="text-sm font-normal text-ink-faint">
+                Start completely fresh. Keeps your account.
+              </span>
             </span>
           </button>
           <Link

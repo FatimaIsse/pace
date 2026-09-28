@@ -96,7 +96,7 @@ export function FocusMode() {
                 <button
                   onClick={() => adjustTime(-TIME_STEP_SECONDS)}
                   aria-label="Remove 5 minutes"
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-ink-soft hover:bg-soft"
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-border text-ink-soft hover:bg-soft"
                 >
                   <Minus size={16} />
                 </button>
@@ -104,7 +104,7 @@ export function FocusMode() {
                 <button
                   onClick={() => adjustTime(TIME_STEP_SECONDS)}
                   aria-label="Add 5 minutes"
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-ink-soft hover:bg-soft"
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-border text-ink-soft hover:bg-soft"
                 >
                   <Plus size={16} />
                 </button>

@@ -23,8 +23,9 @@ export function TaskCard({
   onRemove?: () => void
   completed?: boolean
 }) {
+  // No confirm box: deleting a task shows an Undo toast instead (see useTasks).
   function handleRemove() {
-    if (window.confirm(`Delete "${task.title}"? This can't be undone.`)) onRemove?.()
+    onRemove?.()
   }
 
   const menuItems: OverflowMenuItem[] = []
@@ -49,12 +50,16 @@ export function TaskCard({
       <button
         onClick={onComplete}
         aria-label={completed ? `Mark "${task.title}" not done` : `Mark "${task.title}" done`}
-        className={cn(
-          'flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-border text-transparent transition-colors duration-200 hover:border-primary-text',
-          completed && 'border-primary-text bg-primary-text text-canvas',
-        )}
+        className="group -m-2.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
       >
-        <Check size={14} strokeWidth={3} />
+        <span
+          className={cn(
+            'flex h-6 w-6 items-center justify-center rounded-full border-2 border-border text-transparent transition-colors duration-200 group-hover:border-primary-text',
+            completed && 'border-primary-text bg-primary-text text-canvas',
+          )}
+        >
+          <Check size={14} strokeWidth={3} />
+        </span>
       </button>
 
       <button onClick={onClick} className="flex-1 text-left" disabled={!onClick}>

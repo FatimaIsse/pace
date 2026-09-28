@@ -24,13 +24,14 @@ export function useProjects() {
     return unsubscribe
   }, [user])
 
-  async function addProject(name: string, priority: TaskPriority = 'should', notes = '') {
+  async function addProject(name: string, priority: TaskPriority = 'should', dueDate: string | null = null, notes = '') {
     if (!user) return
     const project: Omit<Project, 'id'> = {
       name,
       notes,
       status: 'just_started',
       priority,
+      dueDate,
       createdAt: new Date().toISOString(),
       archivedAt: null,
     }

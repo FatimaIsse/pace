@@ -77,7 +77,7 @@ export function DayPlan() {
           <button
             onClick={() => setMode('simple')}
             aria-pressed={mode === 'simple'}
-            className={cn('flex h-9 w-9 items-center justify-center rounded-[var(--radius-button)] text-ink-faint', mode === 'simple' && 'bg-sage-soft text-primary-text')}
+            className={cn('flex h-11 w-11 items-center justify-center rounded-[var(--radius-button)] text-ink-faint md:h-9 md:w-9', mode === 'simple' && 'bg-sage-soft text-primary-text')}
             aria-label="Simple view"
           >
             <List size={18} />
@@ -85,7 +85,7 @@ export function DayPlan() {
           <button
             onClick={() => setMode('timeline')}
             aria-pressed={mode === 'timeline'}
-            className={cn('flex h-9 w-9 items-center justify-center rounded-[var(--radius-button)] text-ink-faint', mode === 'timeline' && 'bg-sage-soft text-primary-text')}
+            className={cn('flex h-11 w-11 items-center justify-center rounded-[var(--radius-button)] text-ink-faint md:h-9 md:w-9', mode === 'timeline' && 'bg-sage-soft text-primary-text')}
             aria-label="Timeline view"
           >
             <Clock size={18} />

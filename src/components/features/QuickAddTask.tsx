@@ -23,6 +23,7 @@ export function QuickAddTask({
   defaultProjectId,
   task,
   initialTitle,
+  initialDate,
   onCreated,
 }: {
   open: boolean
@@ -30,6 +31,7 @@ export function QuickAddTask({
   defaultProjectId?: string
   task?: Task | null
   initialTitle?: string
+  initialDate?: string
   onCreated?: () => void
 }) {
   const { tasks, addTask, updateTask } = useTasks()
@@ -51,7 +53,7 @@ export function QuickAddTask({
   function reset() {
     setTitle(initialTitle ?? '')
     setDuration(15)
-    setScheduledFor(todayISO())
+    setScheduledFor(initialDate ?? todayISO())
     setShowMore(false)
     setTiming('flexible')
     setScheduledTime('')
@@ -80,7 +82,7 @@ export function QuickAddTask({
       reset()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, task])
+  }, [open, task, initialDate])
 
   function handleClose() {
     reset()
@@ -150,7 +152,7 @@ export function QuickAddTask({
               type="button"
               onClick={() => setDuration((d) => Math.max(MIN_DURATION, d - DURATION_STEP))}
               aria-label="Decrease duration"
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-ink-soft hover:bg-soft"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-border text-ink-soft hover:bg-soft"
             >
               <Minus size={16} />
             </button>
@@ -159,14 +161,22 @@ export function QuickAddTask({
               type="button"
               onClick={() => setDuration((d) => d + DURATION_STEP)}
               aria-label="Increase duration"
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-ink-soft hover:bg-soft"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-border text-ink-soft hover:bg-soft"
             >
               <PlusIcon size={16} />
             </button>
           </div>
         </div>
 
-        <Input type="date" label="When?" value={scheduledFor} onChange={(e) => setScheduledFor(e.target.value)} />
+        <Input type="date" label="Plan it for" value={scheduledFor} onChange={(e) => setScheduledFor(e.target.value)} />
+
+        <Input
+          type="date"
+          label="Due date (optional)"
+          hint="If it slips past this day, Pace lets you know."
+          value={dueDate}
+          onChange={(e) => handleDueDateChange(e.target.value)}
+        />
 
         <button
           onClick={() => setShowMore((s) => !s)}
@@ -203,13 +213,6 @@ export function QuickAddTask({
                 onChange={(e) => setScheduledTime(e.target.value)}
               />
             )}
-
-            <Input
-              type="date"
-              label="Deadline (optional)"
-              value={dueDate}
-              onChange={(e) => handleDueDateChange(e.target.value)}
-            />
 
             {projects.length > 0 && (
               <div>

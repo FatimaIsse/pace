@@ -18,19 +18,30 @@ export function MobileNavigation() {
       </button>
 
       <nav className="fixed inset-x-0 bottom-0 z-20 flex border-t border-border bg-surface px-2 pb-[env(safe-area-inset-bottom)] md:hidden">
-        {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
+        {NAV_ITEMS.filter((item) => !item.desktopOnly).map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
             className={({ isActive }) =>
               cn(
-                'flex min-h-[56px] flex-1 flex-col items-center justify-center gap-1 py-2 text-[11px] font-medium text-ink-faint',
-                isActive && 'text-primary-text',
+                'flex min-h-[60px] flex-1 flex-col items-center justify-center gap-0.5 py-1.5 text-xs font-medium text-ink-soft',
+                isActive && 'font-semibold text-primary-text',
               )
             }
           >
-            <Icon size={22} strokeWidth={2} />
-            {label}
+            {({ isActive }) => (
+              <>
+                <span
+                  className={cn(
+                    'flex h-7 w-14 items-center justify-center rounded-full transition-colors duration-200',
+                    isActive && 'bg-sage-soft',
+                  )}
+                >
+                  <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+                </span>
+                {label}
+              </>
+            )}
           </NavLink>
         ))}
       </nav>

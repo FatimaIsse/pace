@@ -7,6 +7,7 @@ import { DotGrid } from '@/components/ui/DotGrid'
 import { describeRhythm, lightenGoal, suggestHabitProgression } from '@/services/planning'
 import { cn } from '@/utils/cn'
 import type { Habit, HabitFeeling, HabitSession } from '@/types'
+import { useFeedback } from '@/context/FeedbackContext'
 
 const FEELING_OPTIONS: { value: HabitFeeling; label: string }[] = [
   { value: 'too_hard', label: 'Too hard' },
@@ -42,8 +43,19 @@ export function HabitDetailCard({
   const nowLabel = habit.goalVersion[0]?.value
   const showProgress = startingLabel && nowLabel && startingLabel !== nowLabel
 
-  function handleRemove() {
-    if (window.confirm(`Delete "${habit.name}"? This can't be undone.`)) onRemove()
+  const { confirm } = useFeedback()
+
+  async function handleRemove() {
+    if (
+      await confirm({
+        title: `Delete "${habit.name}"?`,
+        description: "This can't be undone.",
+        confirmLabel: 'Delete',
+        destructive: true,
+      })
+    ) {
+      onRemove()
+    }
   }
 
   const menuItems: OverflowMenuItem[] = [
