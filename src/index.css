@@ -124,6 +124,27 @@
     border-radius: 4px;
   }
 
+  /* The browser-drawn calendar/clock icon inside date and time inputs is
+     black by default (WebKit/Blink), which nearly disappears on a dark input
+     in dark mode. Inverted to white there, back to black in light mode. */
+  input[type='date']::-webkit-calendar-picker-indicator,
+  input[type='time']::-webkit-calendar-picker-indicator {
+    filter: invert(0);
+    cursor: pointer;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) input[type='date']::-webkit-calendar-picker-indicator,
+    :root:not([data-theme='light']) input[type='time']::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+    }
+  }
+
+  :root[data-theme='dark'] input[type='date']::-webkit-calendar-picker-indicator,
+  :root[data-theme='dark'] input[type='time']::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

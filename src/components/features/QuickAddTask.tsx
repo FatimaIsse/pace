@@ -6,12 +6,19 @@ import { Input } from '@/components/ui/Input'
 import { PriorityDot } from '@/components/ui/PriorityDot'
 import { useTasks, type NewTaskInput } from '@/hooks/useTasks'
 import { useProjects } from '@/hooks/useProjects'
-import { estimateForProject, normalizeTaskPriority, PRIORITY_LABEL, suggestScheduleDate } from '@/services/planning'
-import type { Task, TaskPriority } from '@/types'
+import {
+  estimateForProject,
+  normalizeTaskPriority,
+  PRIORITY_LABEL,
+  suggestScheduleDate,
+  TIME_OF_DAY_LABEL,
+} from '@/services/planning'
+import type { Task, TaskPriority, TimeOfDay } from '@/types'
 import { cn } from '@/utils/cn'
 import { todayISO } from '@/utils/date'
 
 const PRIORITY_OPTIONS: TaskPriority[] = ['could', 'should', 'must']
+const TIME_OF_DAY_OPTIONS: TimeOfDay[] = ['morning', 'afternoon', 'evening']
 
 const DURATION_PRESETS = [10, 15, 20, 30, 45, 60]
 const DURATION_STEP = 5
@@ -44,6 +51,7 @@ export function QuickAddTask({
   const [showMore, setShowMore] = useState(false)
   const [timing, setTiming] = useState<Task['timing']>('flexible')
   const [scheduledTime, setScheduledTime] = useState('')
+  const [timePreference, setTimePreference] = useState<TimeOfDay | null>(null)
   const [dueDate, setDueDate] = useState('')
   const [projectId, setProjectId] = useState(defaultProjectId ?? '')
   const [priority, setPriority] = useState<TaskPriority>('should')
@@ -57,6 +65,7 @@ export function QuickAddTask({
     setShowMore(false)
     setTiming('flexible')
     setScheduledTime('')
+    setTimePreference(null)
     setDueDate('')
     setProjectId(defaultProjectId ?? '')
     setPriority('should')
@@ -72,6 +81,7 @@ export function QuickAddTask({
       setScheduledFor(task.scheduledFor ?? todayISO())
       setTiming(task.timing)
       setScheduledTime(task.scheduledTime ?? '')
+      setTimePreference(task.timePreference ?? null)
       setDueDate(task.dueDate ?? '')
       setProjectId(task.projectId ?? defaultProjectId ?? '')
       setPriority(normalizeTaskPriority(task.priority))
@@ -104,6 +114,7 @@ export function QuickAddTask({
       scheduledFor,
       timing,
       scheduledTime: timing === 'fixed' && scheduledTime ? scheduledTime : null,
+      timePreference: timing === 'flexible' ? timePreference : null,
       dueDate: dueDate || null,
       projectId: projectId || null,
       priority,
@@ -220,6 +231,26 @@ export function QuickAddTask({
                 value={scheduledTime}
                 onChange={(e) => setScheduledTime(e.target.value)}
               />
+            )}
+
+            {timing === 'flexible' && (
+              <div>
+                <p className="mb-2 text-sm font-medium text-ink">Time of day (optional)</p>
+                <div className="flex gap-2">
+                  {TIME_OF_DAY_OPTIONS.map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => setTimePreference((prev) => (prev === t ? null : t))}
+                      className={cn(
+                        'flex-1 rounded-[var(--radius-button)] border border-border py-2 text-sm font-medium text-ink-soft transition-colors duration-200',
+                        timePreference === t && 'border-primary-text bg-sage-soft text-primary-text',
+                      )}
+                    >
+                      {TIME_OF_DAY_LABEL[t]}
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
 
             {projects.length > 0 && (

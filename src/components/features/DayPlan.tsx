@@ -12,6 +12,7 @@ import { useFeedback } from '@/context/FeedbackContext'
 import {
   addBreathingRoom,
   applyCapacityPreferences,
+  compareTimePreference,
   detectFragility,
   isDayHeavy,
   isHabitDueToday,
@@ -48,7 +49,9 @@ export function DayPlan() {
   const fixed = todaysTasks
     .filter((t) => t.timing === 'fixed' && t.scheduledTime)
     .sort((a, b) => (a.scheduledTime ?? '').localeCompare(b.scheduledTime ?? ''))
-  const flexible = todaysTasks.filter((t) => t.timing === 'flexible' || !t.scheduledTime)
+  const flexible = todaysTasks
+    .filter((t) => t.timing === 'flexible' || !t.scheduledTime)
+    .sort(compareTimePreference)
 
   // A habit not due today (e.g. 3 days a week, none of them today) simply
   // doesn't show — unless already logged today, so an "extra" day never

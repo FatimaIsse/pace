@@ -24,6 +24,8 @@ import { Me } from '@/pages/Me'
 import { MeAccount } from '@/pages/MeAccount'
 import { MeStats } from '@/pages/MeStats'
 import { MePreferences } from '@/pages/MePreferences'
+import { Notes } from '@/pages/Notes'
+import { Questions } from '@/pages/Questions'
 import { Privacy } from '@/pages/legal/Privacy'
 import { Terms } from '@/pages/legal/Terms'
 import { SpotifyCallback } from '@/pages/SpotifyCallback'
@@ -73,6 +75,8 @@ export default function App() {
                     <Route path="/me/account" element={<MeAccount />} />
                     <Route path="/me/stats" element={<MeStats />} />
                     <Route path="/me/preferences" element={<MePreferences />} />
+                    <Route path="/me/notes" element={<Notes />} />
+                    <Route path="/me/questions" element={<Questions />} />
                   </Route>
                 </Route>
 

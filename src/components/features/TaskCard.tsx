@@ -2,7 +2,7 @@ import { Check, ArrowRightLeft, CalendarPlus, Pencil, RotateCcw, SkipForward, Tr
 import { DeadlineText } from '@/components/ui/DeadlineText'
 import { OverflowMenu, type OverflowMenuItem } from '@/components/ui/OverflowMenu'
 import { PriorityDot } from '@/components/ui/PriorityDot'
-import { deadlineLabel, normalizeTaskPriority, PRIORITY_LABEL } from '@/services/planning'
+import { deadlineLabel, normalizeTaskPriority, PRIORITY_LABEL, TIME_OF_DAY_LABEL } from '@/services/planning'
 import type { Task } from '@/types'
 import { cn } from '@/utils/cn'
 
@@ -77,6 +77,7 @@ export function TaskCard({
             <PriorityDot priority={priority} />
             <span>
               {priorityLabel}
+              {task.timePreference && ` · ${TIME_OF_DAY_LABEL[task.timePreference]}`}
               {deadline && (
                 <>
                   {' · '}

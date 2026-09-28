@@ -20,6 +20,7 @@ import type {
   SkipReason,
   Task,
   TaskPriority,
+  TimeOfDay,
 } from '@/types'
 
 // ---------------------------------------------------------------------------
@@ -28,6 +29,26 @@ import type {
 
 export const PRIORITY_LABEL: Record<TaskPriority, string> = { must: 'Must', should: 'Should', could: 'Could' }
 const PRIORITY_WEIGHT: Record<TaskPriority, number> = { must: 6, should: 3, could: 1 }
+
+// ---------------------------------------------------------------------------
+// Flexible time-of-day — a loose preference, not a hard schedule
+// ---------------------------------------------------------------------------
+
+export const TIME_OF_DAY_LABEL: Record<TimeOfDay, string> = {
+  morning: 'Morning',
+  afternoon: 'Afternoon',
+  evening: 'Evening',
+}
+const TIME_OF_DAY_ORDER: Record<TimeOfDay, number> = { morning: 0, afternoon: 1, evening: 2 }
+
+// Morning/afternoon/evening first (in that order), then anything with no
+// preference — used to sort a day's flexible tasks into a sensible order
+// without pinning any of them to an exact minute.
+export function compareTimePreference(a: Task, b: Task): number {
+  const av = a.timePreference ? TIME_OF_DAY_ORDER[a.timePreference] : 3
+  const bv = b.timePreference ? TIME_OF_DAY_ORDER[b.timePreference] : 3
+  return av - bv
+}
 
 // Maps a task's stored priority — which may still hold the pre-rename
 // 'high' | 'medium' | 'low' values from before this app used Must/Should/

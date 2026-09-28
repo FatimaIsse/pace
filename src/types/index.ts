@@ -70,7 +70,10 @@ export interface Task {
   source: 'manual' | 'brain_dump' | 'breakdown' | 'goal_auto'
   resumeNote?: string | null // "Future Me Handoff" — where you left off, shown next time this surfaces
   actualMinutes?: number | null // real time spent in Focus Mode, vs. `duration`'s estimate — feeds Estimate Learning
+  timePreference?: TimeOfDay | null // an optional loose time for a flexible task — "sometime in the morning", not a fixed minute
 }
+
+export type TimeOfDay = 'morning' | 'afternoon' | 'evening'
 
 export type ProjectStatus = 'just_started' | 'making_progress' | 'almost_there' | 'done'
 
@@ -184,6 +187,19 @@ export interface Insight {
   category: 'completion' | 'friction' | 'timing' | 'project'
   generatedFor: string // week identifier, e.g. "2026-W35"
   createdAt: string
+}
+
+// Personal free-form notes — separate from any task. A note starts as a
+//'draft' (a quick, unpolished capture) and can be marked 'done' once it's
+// something worth keeping as-is, so "still forming" ideas stay easy to find.
+export type NoteStatus = 'draft' | 'done'
+
+export interface Note {
+  id: string
+  text: string
+  status: NoteStatus
+  createdAt: string
+  updatedAt: string
 }
 
 export interface DailyCapacity {

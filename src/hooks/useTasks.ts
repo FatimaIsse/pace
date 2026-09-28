@@ -13,6 +13,7 @@ export interface NewTaskInput {
   timing?: Task['timing']
   scheduledFor?: string | null
   scheduledTime?: string | null
+  timePreference?: Task['timePreference']
   dueDate?: string | null
   projectId?: string | null
   goalId?: string | null
@@ -34,6 +35,7 @@ function toTask(input: NewTaskInput): Omit<Task, 'id'> {
     timing: input.timing ?? 'flexible',
     scheduledFor: input.scheduledFor ?? todayISO(),
     scheduledTime: input.scheduledTime ?? null,
+    timePreference: input.timePreference ?? null,
     dueDate: input.dueDate ?? null,
     projectId: input.projectId ?? null,
     goalId: input.goalId ?? null,

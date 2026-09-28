@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { DeadlineText } from '@/components/ui/DeadlineText'
 import { OverflowMenu, type OverflowMenuItem } from '@/components/ui/OverflowMenu'
 import { PriorityDot } from '@/components/ui/PriorityDot'
-import { deadlineLabel, explainTaskChoice, normalizeTaskPriority, PRIORITY_LABEL } from '@/services/planning'
+import { deadlineLabel, explainTaskChoice, normalizeTaskPriority, PRIORITY_LABEL, TIME_OF_DAY_LABEL } from '@/services/planning'
 import type { DailyCapacity, Project, Task } from '@/types'
 
 export function PrimaryTaskCard({
@@ -67,6 +67,7 @@ export function PrimaryTaskCard({
             <PriorityDot priority={priority} />
             <span>
               {priorityLabel}
+              {task.timePreference && ` · ${TIME_OF_DAY_LABEL[task.timePreference]}`}
               {deadline && (
                 <>
                   {' · '}

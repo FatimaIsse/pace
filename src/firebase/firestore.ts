@@ -127,6 +127,7 @@ const USER_SUBCOLLECTIONS = [
   'goals',
   'weeklyFocus',
   'checkIns',
+  'notes',
   'preferences',
 ]
 

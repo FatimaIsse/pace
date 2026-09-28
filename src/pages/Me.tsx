@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { BarChart3, Camera, ChevronRight, Heart, User } from 'lucide-react'
+import { BarChart3, Camera, ChevronRight, Heart, MessageCircleQuestion, NotebookText, User } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -10,6 +10,8 @@ import { logOut } from '@/firebase/auth'
 const MENU_ITEMS = [
   { to: '/me/account', label: 'Account', icon: User },
   { to: '/me/stats', label: 'My Stats', icon: BarChart3 },
+  { to: '/me/notes', label: 'Notes', icon: NotebookText },
+  { to: '/me/questions', label: 'Questions', icon: MessageCircleQuestion },
   { to: '/me/preferences', label: 'Preferences', icon: Heart },
 ]
 
