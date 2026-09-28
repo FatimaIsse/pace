@@ -22,7 +22,7 @@ const TIME_OF_DAY_OPTIONS: TimeOfDay[] = ['morning', 'afternoon', 'evening']
 
 const DURATION_PRESETS = [10, 15, 20, 30, 45, 60]
 const DURATION_STEP = 5
-const MIN_DURATION = 5
+const MIN_DURATION = 1
 
 export function QuickAddTask({
   open,
@@ -175,7 +175,21 @@ export function QuickAddTask({
             >
               <Minus size={16} />
             </button>
-            <span className="min-w-[64px] text-center text-[15px] font-medium text-ink">{duration} min</span>
+            <span className="flex items-center gap-1.5">
+              <input
+                type="number"
+                inputMode="numeric"
+                min={MIN_DURATION}
+                value={duration}
+                onChange={(e) => {
+                  const next = Math.round(Number(e.target.value))
+                  setDuration(Number.isFinite(next) ? Math.max(MIN_DURATION, next) : MIN_DURATION)
+                }}
+                aria-label="Duration in minutes"
+                className="h-11 w-20 rounded-[var(--radius-button)] border border-border bg-surface text-center text-[15px] font-medium text-ink focus-visible:border-primary-text"
+              />
+              <span className="text-[15px] text-ink-soft">min</span>
+            </span>
             <button
               type="button"
               onClick={() => setDuration((d) => d + DURATION_STEP)}

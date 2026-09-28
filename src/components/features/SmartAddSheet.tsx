@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Minus, Plus } from 'lucide-react'
 import { Sheet } from '@/components/ui/Sheet'
 import { Input, Textarea } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
@@ -18,6 +19,8 @@ const TYPE_OPTIONS: { value: BrainDumpItem['type']; label: string }[] = [
 ]
 
 const DURATION_PRESETS = [10, 15, 20, 30, 45, 60]
+const DURATION_STEP = 5
+const MIN_DURATION = 1
 const PRIORITY_OPTIONS: TaskPriority[] = ['could', 'should', 'must']
 
 function normalizeType(type: BrainDumpItem['type']): BrainDumpItem['type'] {
@@ -192,6 +195,39 @@ export function SmartAddSheet() {
                           {d} min
                         </button>
                       ))}
+                    </div>
+                    <div className="mt-2 flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setDuration(Math.max(MIN_DURATION, effectiveDuration - DURATION_STEP))}
+                        aria-label="Decrease duration"
+                        className="flex h-11 w-11 items-center justify-center rounded-full border border-border text-ink-soft hover:bg-soft"
+                      >
+                        <Minus size={16} />
+                      </button>
+                      <span className="flex items-center gap-1.5">
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          min={MIN_DURATION}
+                          value={effectiveDuration}
+                          onChange={(e) => {
+                            const next = Math.round(Number(e.target.value))
+                            setDuration(Number.isFinite(next) ? Math.max(MIN_DURATION, next) : MIN_DURATION)
+                          }}
+                          aria-label="Duration in minutes"
+                          className="h-11 w-20 rounded-[var(--radius-button)] border border-border bg-surface text-center text-[15px] font-medium text-ink focus-visible:border-primary-text"
+                        />
+                        <span className="text-[15px] text-ink-soft">min</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setDuration(effectiveDuration + DURATION_STEP)}
+                        aria-label="Increase duration"
+                        className="flex h-11 w-11 items-center justify-center rounded-full border border-border text-ink-soft hover:bg-soft"
+                      >
+                        <Plus size={16} />
+                      </button>
                     </div>
                   </div>
                   <div>
