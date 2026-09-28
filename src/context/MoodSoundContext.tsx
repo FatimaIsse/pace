@@ -3,16 +3,25 @@ import { getNoiseDataUrl } from '@/utils/noiseGenerator'
 
 export type FocusSound = 'rain' | 'cafe' | 'waves' | 'forest' | 'white_noise' | 'pink_noise' | 'brown_noise'
 
-export type MusicMood = 'calm' | 'focus' | 'uplift' | 'dreamy'
+export type MusicMood = 'calm' | 'focus' | 'uplift' | 'dreamy' | 'chill'
 export type MusicTrack =
   | 'gymnopedie'
   | 'nocturne'
+  | 'waves_cheremisinov'
+  | 'realness'
   | 'bach_prelude'
   | 'goldberg_aria'
+  | 'ambient_507050'
   | 'entertainer'
   | 'maple_leaf'
+  | 'shimmer'
+  | 'vast_skyline'
   | 'komiku_dreaming'
   | 'traumerei'
+  | 'ambiant_hope'
+  | 'ambiant_truth'
+  | 'chill_out_theme'
+  | 'serenity'
 
 interface SoundDef {
   label: string
@@ -57,6 +66,7 @@ export const MUSIC_MOODS: { id: MusicMood; label: string; blurb: string }[] = [
   { id: 'focus', label: 'Focus', blurb: 'Steady and unobtrusive, for deep work' },
   { id: 'uplift', label: 'Uplift', blurb: 'A little spring in your step' },
   { id: 'dreamy', label: 'Dreamy', blurb: 'Soft and wandering' },
+  { id: 'chill', label: 'Chill', blurb: 'Laid-back and easy' },
 ]
 
 export const MUSIC_TRACKS: Record<MusicTrack, MusicDef> = {
@@ -74,6 +84,20 @@ export const MUSIC_TRACKS: Record<MusicTrack, MusicDef> = {
     mood: 'calm',
     src: '/music/nocturne.m4a',
   },
+  waves_cheremisinov: {
+    title: 'Waves',
+    artist: 'Sergey Cheremisinov',
+    license: 'CC BY 4.0',
+    mood: 'calm',
+    src: '/music/waves-cheremisinov.m4a',
+  },
+  realness: {
+    title: 'Realness',
+    artist: 'Kai Engel',
+    license: 'CC BY 4.0',
+    mood: 'calm',
+    src: '/music/realness-kaiengel.m4a',
+  },
   bach_prelude: {
     title: 'Prelude in C major',
     artist: 'J.S. Bach · Kimiko Ishizaka',
@@ -87,6 +111,13 @@ export const MUSIC_TRACKS: Record<MusicTrack, MusicDef> = {
     license: 'CC0',
     mood: 'focus',
     src: '/music/goldberg-aria.m4a',
+  },
+  ambient_507050: {
+    title: 'Ambient 507050',
+    artist: 'Steve Combs',
+    license: 'CC BY 4.0',
+    mood: 'focus',
+    src: '/music/ambient-stevecombs.m4a',
   },
   entertainer: {
     title: 'The Entertainer',
@@ -102,6 +133,20 @@ export const MUSIC_TRACKS: Record<MusicTrack, MusicDef> = {
     mood: 'uplift',
     src: '/music/maple-leaf.m4a',
   },
+  shimmer: {
+    title: 'Shimmer',
+    artist: 'Scott Holmes',
+    license: 'CC BY 4.0',
+    mood: 'uplift',
+    src: '/music/shimmer-scottholmes.m4a',
+  },
+  vast_skyline: {
+    title: 'Vast Skyline',
+    artist: 'Scott Holmes',
+    license: 'CC BY 4.0',
+    mood: 'uplift',
+    src: '/music/vastskyline-scottholmes.m4a',
+  },
   komiku_dreaming: {
     title: 'Dreaming of You',
     artist: 'Komiku',
@@ -115,6 +160,34 @@ export const MUSIC_TRACKS: Record<MusicTrack, MusicDef> = {
     license: 'Public domain',
     mood: 'dreamy',
     src: '/music/traumerei.m4a',
+  },
+  ambiant_hope: {
+    title: 'Ambiant Hope',
+    artist: 'Komiku',
+    license: 'CC0',
+    mood: 'dreamy',
+    src: '/music/ambianthope-komiku.m4a',
+  },
+  ambiant_truth: {
+    title: 'Ambiant Truth',
+    artist: 'Komiku',
+    license: 'CC0',
+    mood: 'dreamy',
+    src: '/music/ambianttruth-komiku.m4a',
+  },
+  chill_out_theme: {
+    title: 'Chill Out Theme',
+    artist: 'Komiku',
+    license: 'CC0',
+    mood: 'chill',
+    src: '/music/chillout-komiku.m4a',
+  },
+  serenity: {
+    title: 'Serenity',
+    artist: 'Jason Shaw',
+    license: 'CC BY 3.0',
+    mood: 'chill',
+    src: '/music/serenity-jasonshaw.m4a',
   },
 }
 
