@@ -59,7 +59,7 @@ function Dot({ kind }: { kind: 'done' | 'due' | 'missed' | 'planned' }) {
         'inline-block h-2 w-2 shrink-0 rounded-full',
         kind === 'done' && 'bg-primary-text',
         kind === 'due' && 'bg-warning',
-        kind === 'missed' && 'bg-error',
+        kind === 'missed' && 'bg-missed',
         kind === 'planned' && 'border border-ink-faint',
       )}
     />
@@ -325,7 +325,7 @@ export function Calendar() {
 
           {(day.due.length > 0 || day.projectsDue.length > 0 || day.goalsDue.length > 0) && (
             <div className="flex flex-col gap-2">
-              <h3 className={cn('text-sm font-semibold', isPast ? 'text-error' : 'text-ink-soft')}>{dueLabelKind}</h3>
+              <h3 className={cn('text-sm font-semibold', isPast ? 'text-missed' : 'text-ink-soft')}>{dueLabelKind}</h3>
               {day.due.map((t) => (
                 <TaskCard
                   key={t.id}

@@ -24,6 +24,11 @@
   --color-success: #527a60;
   --color-warning: #b27a45;
   --color-error: #a95c5c;
+  /* A clearly-red "missed" cue for Calendar specifically — --color-error
+     stays deliberately muted everywhere else (form validation, the missed-
+     deadline banner text), but a missed day on the calendar reads better as
+     an actual red than a pale rose. */
+  --color-missed: #c23b3b;
   /* Ordered chart ramp for "how far along" (least to most progress). One hue,
      validated: each step is distinguishable, the lightest clears 2:1 on the
      surface. In dark mode it runs dark-to-light so "more" still reads as
@@ -59,6 +64,7 @@
     --color-success: #6fa47f;
     --color-warning: #d99a5f;
     --color-error: #d17d7d;
+    --color-missed: #e2686a;
     --color-seq-1: #8c3352;
     --color-seq-2: #b84b70;
     --color-seq-3: #d9698c;
@@ -84,6 +90,7 @@
   --color-success: #6fa47f;
   --color-warning: #d99a5f;
   --color-error: #d17d7d;
+  --color-missed: #e2686a;
   --color-seq-1: #8c3352;
   --color-seq-2: #b84b70;
   --color-seq-3: #d9698c;
