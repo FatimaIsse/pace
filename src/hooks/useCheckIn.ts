@@ -25,12 +25,13 @@ export function useCheckIn() {
     return unsubscribe
   }, [user])
 
-  async function submitCheckIn(energy: EnergyLevel, dayLoad: DayLoad) {
+  async function submitCheckIn(energy: EnergyLevel, dayLoad: DayLoad, successCondition?: string) {
     if (!user) return
     const checkIn: Omit<CheckIn, 'id'> = {
       date: todayISO(),
       energy,
       dayLoad,
+      successCondition: successCondition?.trim() || null,
       createdAt: new Date().toISOString(),
     }
     return createDoc(user.uid, COLLECTION, checkIn)

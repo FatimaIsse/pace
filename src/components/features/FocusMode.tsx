@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Minus, Music, Pause, Play, Plus, SkipBack, SkipForward, X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import { Textarea } from '@/components/ui/Input'
 import { useUI } from '@/context/UIContext'
 import { useTasks } from '@/hooks/useTasks'
 import { useSpotifyPlayer } from '@/hooks/useSpotifyPlayer'
@@ -24,16 +25,22 @@ export function FocusMode() {
   const { useDuringFocus, preferredSound, play: playFocusSound, stop: stopFocusSound } = useMoodSound()
 
   const [secondsLeft, setSecondsLeft] = useState(0)
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [running, setRunning] = useState(true)
   const [onBreak, setOnBreak] = useState(false)
   const [showExitConfirm, setShowExitConfirm] = useState(false)
+  const [leavingNote, setLeavingNote] = useState(false)
+  const [note, setNote] = useState('')
 
   useEffect(() => {
     if (focusTask) {
       setSecondsLeft(focusTask.duration * 60)
+      setElapsedSeconds(0)
       setRunning(true)
       setOnBreak(false)
       setShowExitConfirm(false)
+      setLeavingNote(false)
+      setNote(focusTask.resumeNote ?? '')
     }
   }, [focusTask])
 
@@ -49,9 +56,16 @@ export function FocusMode() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusTask, useDuringFocus])
 
+  // Tracks real running time independent of secondsLeft, which "Need more
+  // time" and the +/- buttons adjust directly — elapsed time has to come from
+  // the clock actually running, not from countdown math, to feed Estimate
+  // Learning an honest "how long did this actually take."
   useEffect(() => {
     if (!focusTask || !running || onBreak) return
-    const id = window.setInterval(() => setSecondsLeft((s) => Math.max(0, s - 1)), 1000)
+    const id = window.setInterval(() => {
+      setSecondsLeft((s) => Math.max(0, s - 1))
+      setElapsedSeconds((s) => s + 1)
+    }, 1000)
     return () => window.clearInterval(id)
   }, [focusTask, running, onBreak])
 
@@ -59,7 +73,17 @@ export function FocusMode() {
   const task = focusTask
 
   async function handleDone() {
+    if (elapsedSeconds >= 30) {
+      await updateTask(task.id, { actualMinutes: Math.max(1, Math.round(elapsedSeconds / 60)) })
+    }
     await completeTask(task.id)
+    stopFocus()
+  }
+
+  // "Future Me Handoff" — stopping without finishing asks whether to leave a
+  // note, instead of just silently sending the task back to the backlog.
+  async function handleFinishLater() {
+    await updateTask(task.id, { scheduledFor: null, resumeNote: note.trim() || null })
     stopFocus()
   }
 
@@ -79,7 +103,27 @@ export function FocusMode() {
 
       <div className="flex flex-1 items-center justify-center px-6">
         <div className="w-full max-w-sm text-center">
-          {onBreak ? (
+          {leavingNote ? (
+            <>
+              <p className="text-sm font-medium text-ink-faint">Leave future you a note?</p>
+              <h1 className="mt-2 text-2xl font-semibold text-ink">{task.title}</h1>
+              <p className="mt-1 text-[15px] text-ink-soft">Optional — helps you pick up exactly where you stopped.</p>
+              <Textarea
+                autoFocus
+                rows={3}
+                className="mt-4 text-left"
+                placeholder="Intro is finished. Continue from 2:14. Need to add music next."
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+              />
+              <div className="mt-4 flex flex-col gap-2.5">
+                <Button onClick={handleFinishLater}>{note.trim() ? 'Save note & pause' : 'Pause without a note'}</Button>
+                <Button variant="ghost" onClick={() => setLeavingNote(false)}>
+                  Never mind
+                </Button>
+              </div>
+            </>
+          ) : onBreak ? (
             <>
               <h1 className="text-2xl font-semibold text-ink">Taking a break.</h1>
               <p className="mt-1 text-[15px] text-ink-soft">Come back whenever you're ready.</p>
@@ -123,6 +167,12 @@ export function FocusMode() {
                 <Button variant="ghost" onClick={() => setOnBreak(true)}>
                   Take a break
                 </Button>
+                <button
+                  onClick={() => setLeavingNote(true)}
+                  className="mx-auto min-h-[44px] text-sm font-medium text-ink-faint hover:text-ink-soft"
+                >
+                  I'll finish this later
+                </button>
               </div>
 
               {spotify.ready && (

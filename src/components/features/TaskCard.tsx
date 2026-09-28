@@ -1,4 +1,4 @@
-import { Check, ArrowRightLeft, Pencil, SkipForward, Trash2 } from 'lucide-react'
+import { Check, ArrowRightLeft, CalendarPlus, Pencil, RotateCcw, SkipForward, Trash2 } from 'lucide-react'
 import { DeadlineText } from '@/components/ui/DeadlineText'
 import { OverflowMenu, type OverflowMenuItem } from '@/components/ui/OverflowMenu'
 import { PriorityDot } from '@/components/ui/PriorityDot'
@@ -12,6 +12,7 @@ export function TaskCard({
   onSkip,
   onClick,
   onMove,
+  onMoveToTomorrow,
   onRemove,
   completed = false,
 }: {
@@ -20,6 +21,7 @@ export function TaskCard({
   onSkip?: () => void
   onClick?: () => void
   onMove?: () => void
+  onMoveToTomorrow?: () => void
   onRemove?: () => void
   completed?: boolean
 }) {
@@ -32,6 +34,9 @@ export function TaskCard({
   if (!completed && onSkip) menuItems.push({ label: 'Skip', icon: <SkipForward size={15} />, onClick: onSkip })
   if (onClick) menuItems.push({ label: 'Edit', icon: <Pencil size={15} />, onClick })
   if (onMove) menuItems.push({ label: 'Move', icon: <ArrowRightLeft size={15} />, onClick: onMove })
+  if (onMoveToTomorrow) {
+    menuItems.push({ label: 'Move to tomorrow', icon: <CalendarPlus size={15} />, onClick: onMoveToTomorrow })
+  }
   if (onRemove) {
     menuItems.push({ label: 'Delete', icon: <Trash2 size={15} />, onClick: handleRemove, variant: 'danger' })
   }
@@ -78,6 +83,14 @@ export function TaskCard({
                   <DeadlineText dueDate={task.dueDate} label={deadline} />
                 </>
               )}
+            </span>
+          </p>
+        )}
+        {!completed && task.resumeNote && (
+          <p className="mt-0.5 flex items-start gap-1.5 text-xs text-ink-soft">
+            <RotateCcw size={12} className="mt-0.5 shrink-0" aria-hidden />
+            <span>
+              <span className="font-medium">Where you left off:</span> {task.resumeNote}
             </span>
           </p>
         )}

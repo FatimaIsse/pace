@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowRightLeft, Check, Pencil, SkipForward, Trash2 } from 'lucide-react'
+import { ArrowRightLeft, CalendarPlus, Check, Pencil, RotateCcw, SkipForward, Trash2 } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { DeadlineText } from '@/components/ui/DeadlineText'
@@ -19,6 +19,7 @@ export function PrimaryTaskCard({
   onSkip,
   onEdit,
   onMove,
+  onMoveToTomorrow,
   onRemove,
 }: {
   task: Task
@@ -31,6 +32,7 @@ export function PrimaryTaskCard({
   onSkip: () => void
   onEdit?: () => void
   onMove?: () => void
+  onMoveToTomorrow?: () => void
   onRemove?: () => void
 }) {
   const [showWhy, setShowWhy] = useState(false)
@@ -43,6 +45,9 @@ export function PrimaryTaskCard({
   const menuItems: OverflowMenuItem[] = [{ label: 'Skip', icon: <SkipForward size={15} />, onClick: onSkip }]
   if (onEdit) menuItems.push({ label: 'Edit', icon: <Pencil size={15} />, onClick: onEdit })
   if (onMove) menuItems.push({ label: 'Move', icon: <ArrowRightLeft size={15} />, onClick: onMove })
+  if (onMoveToTomorrow) {
+    menuItems.push({ label: 'Move to tomorrow', icon: <CalendarPlus size={15} />, onClick: onMoveToTomorrow })
+  }
   if (onRemove) {
     menuItems.push({ label: 'Delete', icon: <Trash2 size={15} />, onClick: handleRemove, variant: 'danger' })
   }
@@ -70,6 +75,14 @@ export function PrimaryTaskCard({
               )}
             </span>
           </p>
+          {task.resumeNote && (
+            <p className="mt-1 flex items-start gap-1.5 text-sm text-ink-soft">
+              <RotateCcw size={13} className="mt-0.5 shrink-0" aria-hidden />
+              <span>
+                <span className="font-medium">Where you left off:</span> {task.resumeNote}
+              </span>
+            </p>
+          )}
         </button>
         <div className="flex shrink-0 items-center gap-1">
           {onComplete && (

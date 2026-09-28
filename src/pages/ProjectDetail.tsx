@@ -5,6 +5,7 @@ import { useProjects } from '@/hooks/useProjects'
 import { useTasks } from '@/hooks/useTasks'
 import { useCheckIn } from '@/hooks/useCheckIn'
 import { useUI } from '@/context/UIContext'
+import { useMoveToTomorrow } from '@/hooks/useMoveToTomorrow'
 import { usePreferences } from '@/context/PreferencesContext'
 import {
   applyCapacityPreferences,
@@ -42,6 +43,7 @@ export function ProjectDetail() {
   const { tasks, addTask, completeTask, uncompleteTask, skipTask, updateTask, removeTask } = useTasks()
   const { todayCheckIn } = useCheckIn()
   const { startFocus } = useUI()
+  const { moveToTomorrow } = useMoveToTomorrow()
   const { confirm } = useFeedback()
   const { planningStyle, dailyCapacityPref } = usePreferences()
   const [addOpen, setAddOpen] = useState(false)
@@ -214,6 +216,7 @@ export function ProjectDetail() {
           onSkip={() => skipTask(nextStepTask.id, 'not_today')}
           onEdit={() => setEditingTask(nextStepTask)}
           onMove={() => updateTask(nextStepTask.id, { scheduledFor: null })}
+          onMoveToTomorrow={() => moveToTomorrow(nextStepTask)}
           onRemove={() => removeTask(nextStepTask.id)}
         />
       ) : (
@@ -252,6 +255,7 @@ export function ProjectDetail() {
                   onSkip={() => skipTask(task.id, 'not_today')}
                   onClick={() => setEditingTask(task)}
                   onMove={() => updateTask(task.id, { scheduledFor: null })}
+                  onMoveToTomorrow={() => moveToTomorrow(task)}
                   onRemove={() => removeTask(task.id)}
                 />
               ))}

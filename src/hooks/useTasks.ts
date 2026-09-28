@@ -51,6 +51,8 @@ function toTask(input: NewTaskInput): Omit<Task, 'id'> {
     createdAt: new Date().toISOString(),
     completedAt: null,
     source: input.source ?? 'manual',
+    resumeNote: null,
+    actualMinutes: null,
   }
 }
 
@@ -86,7 +88,7 @@ export function useTasks() {
 
   async function completeTask(taskId: string) {
     const task = tasks.find((t) => t.id === taskId)
-    await updateTask(taskId, { status: 'done', completedAt: new Date().toISOString() })
+    await updateTask(taskId, { status: 'done', completedAt: new Date().toISOString(), resumeNote: null })
     toast({
       message: task ? `Done: ${task.title}` : 'Marked done',
       actionLabel: 'Undo',

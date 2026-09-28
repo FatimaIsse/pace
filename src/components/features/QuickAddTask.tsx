@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Minus, Plus as PlusIcon } from 'lucide-react'
 import { Sheet } from '@/components/ui/Sheet'
 import { Button } from '@/components/ui/Button'
@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/Input'
 import { PriorityDot } from '@/components/ui/PriorityDot'
 import { useTasks, type NewTaskInput } from '@/hooks/useTasks'
 import { useProjects } from '@/hooks/useProjects'
-import { normalizeTaskPriority, PRIORITY_LABEL, suggestScheduleDate } from '@/services/planning'
+import { estimateForProject, normalizeTaskPriority, PRIORITY_LABEL, suggestScheduleDate } from '@/services/planning'
 import type { Task, TaskPriority } from '@/types'
 import { cn } from '@/utils/cn'
 import { todayISO } from '@/utils/date'
@@ -121,6 +121,14 @@ export function QuickAddTask({
 
   const dependencyOptions = tasks.filter((t) => t.status === 'active' && t.id !== task?.id)
 
+  // "Estimate Learning" — once a project has enough finished tasks with a
+  // real actual-vs-estimated gap, say so once rather than asking the person
+  // to configure anything.
+  const estimateSuggestion = useMemo(
+    () => (projectId ? estimateForProject(tasks, projectId, duration) : null),
+    [tasks, projectId, duration],
+  )
+
   return (
     <Sheet open={open} onClose={handleClose} title={isEditing ? 'Edit task' : 'Quick add'}>
       <div className="flex flex-col gap-4">
@@ -229,6 +237,19 @@ export function QuickAddTask({
                     </option>
                   ))}
                 </select>
+                {estimateSuggestion && (
+                  <p className="mt-2 text-sm text-ink-soft">
+                    Tasks in this project usually take about {estimateSuggestion.suggestedMinutes} min (based on{' '}
+                    {estimateSuggestion.sampleSize} you've finished).{' '}
+                    <button
+                      type="button"
+                      onClick={() => setDuration(estimateSuggestion.suggestedMinutes)}
+                      className="font-medium text-primary-text underline underline-offset-2"
+                    >
+                      Use {estimateSuggestion.suggestedMinutes} min
+                    </button>
+                  </p>
+                )}
               </div>
             )}
 

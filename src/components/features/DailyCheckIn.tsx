@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { DayLoad, EnergyLevel } from '@/types'
 import { cn } from '@/utils/cn'
 import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
 
 const ENERGY_OPTIONS: { value: EnergyLevel; label: string }[] = [
   { value: 'low', label: 'Low' },
@@ -18,10 +19,11 @@ const LOAD_OPTIONS: { value: DayLoad; label: string }[] = [
 export function DailyCheckIn({
   onSubmit,
 }: {
-  onSubmit: (energy: EnergyLevel, dayLoad: DayLoad) => void
+  onSubmit: (energy: EnergyLevel, dayLoad: DayLoad, successCondition?: string) => void
 }) {
   const [energy, setEnergy] = useState<EnergyLevel | null>(null)
   const [dayLoad, setDayLoad] = useState<DayLoad | null>(null)
+  const [successCondition, setSuccessCondition] = useState('')
 
   const canSubmit = energy !== null && dayLoad !== null
 
@@ -67,10 +69,20 @@ export function DailyCheckIn({
         </div>
       </fieldset>
 
+      <div className="mb-5">
+        <Input
+          label="What would make today feel successful? (optional)"
+          voiceInput
+          placeholder="One thing — the rest is a bonus."
+          value={successCondition}
+          onChange={(e) => setSuccessCondition(e.target.value)}
+        />
+      </div>
+
       <Button
         className="w-full"
         disabled={!canSubmit}
-        onClick={() => energy && dayLoad && onSubmit(energy, dayLoad)}
+        onClick={() => energy && dayLoad && onSubmit(energy, dayLoad, successCondition)}
       >
         Continue
       </Button>

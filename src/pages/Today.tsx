@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { ChevronDown, ChevronUp } from 'lucide-react'
+import { ChevronDown, ChevronUp, Heart } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { usePreferences } from '@/context/PreferencesContext'
 import { useUI } from '@/context/UIContext'
+import { useFeedback } from '@/context/FeedbackContext'
 import { useCheckIn } from '@/hooks/useCheckIn'
 import { useTasks } from '@/hooks/useTasks'
 import { useHabits } from '@/hooks/useHabits'
 import { useGoals } from '@/hooks/useGoals'
 import { useProjects } from '@/hooks/useProjects'
 import { useBrainDump } from '@/hooks/useBrainDump'
+import { useMoveToTomorrow } from '@/hooks/useMoveToTomorrow'
 import { applyCapacityPreferences, deadlineLabel, generateDailyPlan, makeRealistic, personalizedFocus } from '@/services/planning'
 import { friendlyGreeting, isToday, todayISO } from '@/utils/date'
 import type { SkipReason, Task } from '@/types'
@@ -29,6 +31,7 @@ import { PauseModeSheet } from '@/components/features/PauseModeSheet'
 import { StartHereSheet } from '@/components/features/StartHereSheet'
 import { QuickAddTask } from '@/components/features/QuickAddTask'
 import { NeedHelpSheet } from '@/components/features/NeedHelpSheet'
+import { MinimumDaySheet } from '@/components/features/MinimumDaySheet'
 
 function PausedToday({ deadlines }: { deadlines: Task[] }) {
   const { resume } = usePreferences()
@@ -73,12 +76,14 @@ export function Today() {
   const { profile } = useAuth()
   const { isPaused, planningStyle, dailyCapacityPref, gentleReminders } = usePreferences()
   const { startFocus, openOverwhelmed, openRecovery } = useUI()
+  const { toast } = useFeedback()
   const { todayCheckIn, submitCheckIn } = useCheckIn()
   const { tasks, updateTask, completeTask, uncompleteTask, skipTask, archiveTask, removeTask } = useTasks()
   const { habits, sessionsFor, hasSessionToday, logSession } = useHabits()
   const { goals } = useGoals()
   const { projects } = useProjects()
   const { removeInboxItem } = useBrainDump()
+  const { moveToTomorrow } = useMoveToTomorrow()
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -92,6 +97,7 @@ export function Today() {
   const [inboxPrefill, setInboxPrefill] = useState<{ title: string; dumpId: string; key: string } | null>(null)
   const [restarting, setRestarting] = useState(false)
   const [needHelpOpen, setNeedHelpOpen] = useState(false)
+  const [minimumDayOpen, setMinimumDayOpen] = useState(false)
   const [completedExpanded, setCompletedExpanded] = useState(false)
   const [planChangeResult, setPlanChangeResult] = useState<PlanChangeResult | null>(null)
   const [undoMoves, setUndoMoves] = useState<Map<string, string | null>>(new Map())
@@ -146,8 +152,8 @@ export function Today() {
           <p className="mt-1 text-[15px] text-ink-soft">{focusMessage}</p>
         </div>
         <DailyCheckIn
-          onSubmit={(energy, dayLoad) => {
-            submitCheckIn(energy, dayLoad)
+          onSubmit={(energy, dayLoad, successCondition) => {
+            submitCheckIn(energy, dayLoad, successCondition)
             setRestarting(false)
           }}
         />
@@ -201,6 +207,20 @@ export function Today() {
     setPlansChangedOpen(false)
   }
 
+  async function handleMinimumDay(deferred: Task[]) {
+    const undoMap = new Map(deferred.map((t) => [t.id, t.scheduledFor]))
+    for (const t of deferred) {
+      await updateTask(t.id, { scheduledFor: null })
+    }
+    toast({
+      message: `Today is minimal now. ${deferred.length} moved off.`,
+      actionLabel: 'Undo',
+      onAction: () => {
+        for (const [id, scheduledFor] of undoMap) void updateTask(id, { scheduledFor })
+      },
+    })
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-[820px] flex-col gap-8">
       <div>
@@ -209,6 +229,15 @@ export function Today() {
         </h1>
         <p className="mt-1 text-[15px] text-ink-soft">{focusMessage}</p>
       </div>
+
+      {checkIn.successCondition && (
+        <div className="flex items-center gap-2.5 rounded-[var(--radius-card)] border border-border bg-sage-soft px-4 py-3">
+          <Heart size={16} className="shrink-0 fill-current text-primary-text" aria-hidden />
+          <p className="text-[15px] text-primary-text">
+            <span className="font-semibold">Today's win:</span> {checkIn.successCondition}
+          </p>
+        </div>
+      )}
 
       <section className="flex flex-col gap-3">
         {plan.rightNow ? (
@@ -222,6 +251,7 @@ export function Today() {
             onSkip={() => setSkipTarget(plan.rightNow)}
             onEdit={() => setEditingTask(plan.rightNow)}
             onMove={() => updateTask(plan.rightNow!.id, { scheduledFor: null })}
+            onMoveToTomorrow={() => moveToTomorrow(plan.rightNow!)}
             onRemove={() => removeTask(plan.rightNow!.id)}
           />
         ) : (
@@ -249,6 +279,7 @@ export function Today() {
                 onSkip={() => setSkipTarget(task)}
                 onClick={() => setEditingTask(task)}
                 onMove={() => updateTask(task.id, { scheduledFor: null })}
+                onMoveToTomorrow={() => moveToTomorrow(task)}
                 onRemove={() => removeTask(task.id)}
               />
             ))}
@@ -313,7 +344,17 @@ export function Today() {
         onStartHere={() => setStartHereOpen(true)}
         onPlansChanged={() => setPlansChangedOpen(true)}
         onOverwhelmed={openOverwhelmed}
+        onMinimumDay={() => setMinimumDayOpen(true)}
         onNeedBreak={() => setPauseOpen(true)}
+      />
+
+      <MinimumDaySheet
+        open={minimumDayOpen}
+        onClose={() => setMinimumDayOpen(false)}
+        tasks={eligibleTasks}
+        capacity={capacity}
+        projects={projects}
+        onApply={handleMinimumDay}
       />
 
       <SkipRescueSheet

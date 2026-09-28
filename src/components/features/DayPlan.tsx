@@ -1,11 +1,13 @@
 import { useState } from 'react'
-import { Clock, List } from 'lucide-react'
+import { AlertTriangle, Clock, List } from 'lucide-react'
 import { useTasks } from '@/hooks/useTasks'
 import { useHabits } from '@/hooks/useHabits'
 import { useProjects } from '@/hooks/useProjects'
 import { useCheckIn } from '@/hooks/useCheckIn'
+import { useMoveToTomorrow } from '@/hooks/useMoveToTomorrow'
 import { usePreferences } from '@/context/PreferencesContext'
-import { applyCapacityPreferences, isDayHeavy, makeRealistic } from '@/services/planning'
+import { useFeedback } from '@/context/FeedbackContext'
+import { addBreathingRoom, applyCapacityPreferences, detectFragility, isDayHeavy, makeRealistic } from '@/services/planning'
 import { isToday, todayISO } from '@/utils/date'
 import { cn } from '@/utils/cn'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -19,7 +21,9 @@ export function DayPlan() {
   const { habits, hasSessionToday } = useHabits()
   const { projects } = useProjects()
   const { todayCheckIn } = useCheckIn()
+  const { moveToTomorrow } = useMoveToTomorrow()
   const { planningStyle, dailyCapacityPref, gentleReminders } = usePreferences()
+  const { toast } = useFeedback()
   const [mode, setMode] = useState<ViewMode>('simple')
   const [madeLighter, setMadeLighter] = useState<{ kept: number; moved: string[] } | null>(null)
   const [undoMap, setUndoMap] = useState<Map<string, string | null>>(new Map())
@@ -41,9 +45,26 @@ export function DayPlan() {
     dailyCapacityPref,
   })
   const heavy = gentleReminders && isDayHeavy(todaysTasks, capacity) && !madeLighter
+  const fragileGaps = gentleReminders ? detectFragility(fixed) : []
 
   function handleMoveTask(task: { id: string; scheduledFor: string | null }) {
     updateTask(task.id, { scheduledFor: null })
+  }
+
+  // "Schedule Fragility" — cascades every fixed task after a tight gap
+  // forward just enough to restore breathing room, then offers Undo like
+  // every other bulk change in the app.
+  async function handleAddBreathingRoom() {
+    const original = new Map(fixed.map((t) => [t.id, t.scheduledTime]))
+    const updates = addBreathingRoom(fixed)
+    for (const u of updates) await updateTask(u.taskId, { scheduledTime: u.scheduledTime })
+    toast({
+      message: 'Added breathing room between your plans.',
+      actionLabel: 'Undo',
+      onAction: () => {
+        for (const u of updates) void updateTask(u.taskId, { scheduledTime: original.get(u.taskId) ?? null })
+      },
+    })
   }
 
   async function handleMakeRealistic() {
@@ -102,6 +123,22 @@ export function DayPlan() {
         </div>
       )}
 
+      {fragileGaps.length > 0 && (
+        <div className="flex items-start gap-3 rounded-[var(--radius-card)] border border-warning/30 bg-warning/5 px-4 py-3">
+          <AlertTriangle size={18} className="mt-0.5 shrink-0 text-warning" aria-hidden />
+          <div className="min-w-0 flex-1">
+            <p className="text-[15px] font-medium text-ink">This part of your day is fragile.</p>
+            <p className="text-sm text-ink-soft">
+              If "{fragileGaps[0].before.title}" runs long, "{fragileGaps[0].after.title}" could be affected.
+              {fragileGaps.length > 1 && ` (${fragileGaps.length} tight spots today.)`}
+            </p>
+            <Button size="sm" variant="secondary" className="mt-2" onClick={handleAddBreathingRoom}>
+              Add breathing room
+            </Button>
+          </div>
+        </div>
+      )}
+
       {madeLighter && (
         <div className="animate-card-in flex flex-col gap-2 rounded-[var(--radius-card)] border border-border bg-soft p-4">
           <p className="text-[15px] font-medium text-ink">I made today lighter.</p>
@@ -128,6 +165,7 @@ export function DayPlan() {
               task={task}
               onComplete={() => completeTask(task.id)}
               onMove={() => handleMoveTask(task)}
+              onMoveToTomorrow={() => moveToTomorrow(task)}
               onRemove={() => removeTask(task.id)}
             />
           ))}
@@ -137,6 +175,7 @@ export function DayPlan() {
               task={task}
               onComplete={() => completeTask(task.id)}
               onMove={() => handleMoveTask(task)}
+              onMoveToTomorrow={() => moveToTomorrow(task)}
               onRemove={() => removeTask(task.id)}
             />
           ))}

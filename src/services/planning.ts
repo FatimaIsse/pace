@@ -337,6 +337,179 @@ export function makeRealistic(tasks: Task[], capacity: DailyCapacity, projects: 
   return { kept, moved }
 }
 
+export function formatDuration(minutes: number): string {
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  if (h === 0) return `${m}m`
+  if (m === 0) return `${h}h`
+  return `${h}h ${m}m`
+}
+
+// ---------------------------------------------------------------------------
+// Minimum Day — collapse the whole day to what actually has to happen
+// ---------------------------------------------------------------------------
+
+export interface MinimumDayPlan {
+  keep: Task[]
+  deferred: Task[]
+}
+
+const MINIMUM_DAY_CAP = 3
+
+// "I need a minimum day" — not a lighter version of one task, a lighter
+// version of the entire day. Keeps fixed commitments (they're not really
+// optional) plus the highest-scoring Must/Top-3 work, capped at three
+// flexible items so "minimum" stays minimum regardless of how full today
+// looked. Everything else is deferred (scheduledFor cleared), never deleted.
+export function computeMinimumDay(tasks: Task[], capacity: DailyCapacity, projects: Project[] = []): MinimumDayPlan {
+  const scheduled = tasks.filter((t) => t.status === 'active')
+  const isEssential = (t: Task) => {
+    if (normalizeTaskPriority(t.priority) === 'must') return true
+    if (t.isTop3) return true
+    const project = t.projectId ? projects.find((p) => p.id === t.projectId) : undefined
+    return Boolean(project && normalizeTaskPriority(project.priority) === 'must')
+  }
+
+  const fixed = scheduled.filter((t) => t.timing === 'fixed')
+  const flexibleEssential = scheduled.filter((t) => t.timing !== 'fixed' && isEssential(t))
+  const rankedFlexible = [...flexibleEssential].sort(
+    (a, b) => scoreTask(b, capacity, tasks, projects) - scoreTask(a, capacity, tasks, projects),
+  )
+
+  // Fixed commitments aren't a "kept" choice — they're on the calendar
+  // regardless — so they sit outside the cap rather than crowding out
+  // essential flexible work when a day happens to have several of them.
+  let keep = [...fixed, ...rankedFlexible.slice(0, MINIMUM_DAY_CAP)]
+
+  // A genuinely light day may have nothing flagged essential — fall back to
+  // the single best next task so "minimum day" never means an empty one.
+  if (keep.length === 0) {
+    const top = chooseNextTask(scheduled, capacity, projects)
+    if (top) keep = [top]
+  }
+
+  const deferred = scheduled.filter((t) => !keep.some((k) => k.id === t.id))
+  return { keep, deferred }
+}
+
+// ---------------------------------------------------------------------------
+// Tomorrow Debt — show the cost of postponing before you create it
+// ---------------------------------------------------------------------------
+
+// A neutral "typical day" baseline (normal load, okay energy) — tomorrow's
+// real check-in doesn't exist yet, so this stands in as the yardstick for
+// "would tomorrow get crowded?" Reuses the same 15%-over-capacity definition
+// of "heavy" that isDayHeavy already uses, for one consistent meaning of
+// "crowded" across the app.
+const AVERAGE_DAY_MINUTES = Math.round(BASE_MINUTES.normal * ENERGY_MULTIPLIER.okay)
+
+export interface TomorrowLoad {
+  currentMinutes: number
+  projectedMinutes: number
+  isCrowded: boolean
+}
+
+export function tomorrowDebt(tasks: Task[], tomorrowISO: string, addingMinutes = 0): TomorrowLoad {
+  const currentMinutes = tasks
+    .filter((t) => t.status === 'active' && t.scheduledFor === tomorrowISO)
+    .reduce((sum, t) => sum + t.duration, 0)
+  const projectedMinutes = currentMinutes + addingMinutes
+  return { currentMinutes, projectedMinutes, isCrowded: projectedMinutes > AVERAGE_DAY_MINUTES * HEAVY_DAY_SLACK }
+}
+
+// ---------------------------------------------------------------------------
+// Schedule Fragility — does this plan have room to survive real life?
+// ---------------------------------------------------------------------------
+
+const BREATHING_ROOM_MINUTES = 15
+
+function timeToMinutes(hhmm: string): number {
+  const [h, m] = hhmm.split(':').map(Number)
+  return h * 60 + m
+}
+function minutesToTime(total: number): string {
+  const clamped = Math.max(0, total) % (24 * 60)
+  const hh = String(Math.floor(clamped / 60)).padStart(2, '0')
+  const mm = String(clamped % 60).padStart(2, '0')
+  return `${hh}:${mm}`
+}
+
+export interface FragilityGap {
+  before: Task
+  after: Task
+  gapMinutes: number
+}
+
+// Flags back-to-back fixed commitments with no room for one to run long —
+// "does this survive real life?" rather than just "does it fit." Only looks
+// at fixed/timed tasks: flexible work has nowhere fixed to collide.
+export function detectFragility(fixedTasks: Task[]): FragilityGap[] {
+  const sorted = [...fixedTasks]
+    .filter((t) => t.timing === 'fixed' && t.scheduledTime)
+    .sort((a, b) => (a.scheduledTime ?? '').localeCompare(b.scheduledTime ?? ''))
+
+  const gaps: FragilityGap[] = []
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const before = sorted[i]
+    const after = sorted[i + 1]
+    const gapMinutes = timeToMinutes(after.scheduledTime!) - (timeToMinutes(before.scheduledTime!) + before.duration)
+    if (gapMinutes < BREATHING_ROOM_MINUTES) gaps.push({ before, after, gapMinutes: Math.max(0, gapMinutes) })
+  }
+  return gaps
+}
+
+// Pushes each fixed task after a fragile gap forward just enough to restore
+// breathing room, cascading forward if that then collides with the next one.
+export function addBreathingRoom(fixedTasks: Task[]): { taskId: string; scheduledTime: string }[] {
+  const sorted = [...fixedTasks]
+    .filter((t) => t.timing === 'fixed' && t.scheduledTime)
+    .sort((a, b) => (a.scheduledTime ?? '').localeCompare(b.scheduledTime ?? ''))
+
+  const updates: { taskId: string; scheduledTime: string }[] = []
+  for (let i = 1; i < sorted.length; i++) {
+    const prevEnd = timeToMinutes(sorted[i - 1].scheduledTime!) + sorted[i - 1].duration
+    const needsStart = prevEnd + BREATHING_ROOM_MINUTES
+    if (timeToMinutes(sorted[i].scheduledTime!) < needsStart) {
+      const newTime = minutesToTime(needsStart)
+      sorted[i] = { ...sorted[i], scheduledTime: newTime }
+      updates.push({ taskId: sorted[i].id, scheduledTime: newTime })
+    }
+  }
+  return updates
+}
+
+// ---------------------------------------------------------------------------
+// Estimate Learning — learns real durations from a project's own history
+// ---------------------------------------------------------------------------
+
+const MIN_ESTIMATE_SAMPLE = 3
+const ESTIMATE_DEVIATION_THRESHOLD = 0.25 // only speak up when actual differs by more than this
+
+export interface EstimateSuggestion {
+  suggestedMinutes: number
+  sampleSize: number
+}
+
+// Scoped to a project's own finished-task history (not fuzzy title-matching,
+// which is fragile) — after enough completions, if this project's tasks
+// reliably run longer or shorter than estimated, say so once, quietly.
+export function estimateForProject(
+  doneTasks: Task[],
+  projectId: string,
+  requestedMinutes: number,
+): EstimateSuggestion | null {
+  const sample = doneTasks.filter(
+    (t) => t.projectId === projectId && t.status === 'done' && t.actualMinutes && t.duration > 0,
+  )
+  if (sample.length < MIN_ESTIMATE_SAMPLE || requestedMinutes <= 0) return null
+
+  const avgRatio = sample.reduce((sum, t) => sum + t.actualMinutes! / t.duration, 0) / sample.length
+  const suggestedMinutes = Math.max(5, Math.round((requestedMinutes * avgRatio) / 5) * 5)
+
+  if (Math.abs(suggestedMinutes - requestedMinutes) / requestedMinutes < ESTIMATE_DEVIATION_THRESHOLD) return null
+  return { suggestedMinutes, sampleSize: sample.length }
+}
+
 // ---------------------------------------------------------------------------
 // Break it down
 // ---------------------------------------------------------------------------

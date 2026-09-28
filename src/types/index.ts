@@ -68,6 +68,8 @@ export interface Task {
   createdAt: string
   completedAt: string | null
   source: 'manual' | 'brain_dump' | 'breakdown' | 'goal_auto'
+  resumeNote?: string | null // "Future Me Handoff" — where you left off, shown next time this surfaces
+  actualMinutes?: number | null // real time spent in Focus Mode, vs. `duration`'s estimate — feeds Estimate Learning
 }
 
 export type ProjectStatus = 'just_started' | 'making_progress' | 'almost_there' | 'done'
@@ -149,6 +151,7 @@ export interface CheckIn {
   date: string
   energy: EnergyLevel
   dayLoad: DayLoad
+  successCondition?: string | null // "Success Condition" — the one thing that would make today feel like it worked
   createdAt: string
 }
 

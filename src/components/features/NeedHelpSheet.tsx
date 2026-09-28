@@ -4,23 +4,26 @@ const OPTIONS = (props: {
   onStartHere: () => void
   onPlansChanged: () => void
   onOverwhelmed: () => void
+  onMinimumDay: () => void
   onNeedBreak: () => void
 }) => [
   { label: "I don't know where to start", onClick: props.onStartHere },
   { label: 'My plans changed', onClick: props.onPlansChanged },
   { label: "I'm overwhelmed", onClick: props.onOverwhelmed },
+  { label: 'I need a minimum day', onClick: props.onMinimumDay },
   { label: 'I need a break', onClick: props.onNeedBreak },
 ]
 
 // Routes to the sheets/modes that already exist (StartHereSheet,
-// PlansChangedSheet, OverwhelmedMode, PauseModeSheet) — this is just a
-// single entry point over them, not new logic of its own.
+// PlansChangedSheet, OverwhelmedMode, MinimumDaySheet, PauseModeSheet) — this
+// is just a single entry point over them, not new logic of its own.
 export function NeedHelpSheet({
   open,
   onClose,
   onStartHere,
   onPlansChanged,
   onOverwhelmed,
+  onMinimumDay,
   onNeedBreak,
 }: {
   open: boolean
@@ -28,9 +31,10 @@ export function NeedHelpSheet({
   onStartHere: () => void
   onPlansChanged: () => void
   onOverwhelmed: () => void
+  onMinimumDay: () => void
   onNeedBreak: () => void
 }) {
-  const options = OPTIONS({ onStartHere, onPlansChanged, onOverwhelmed, onNeedBreak })
+  const options = OPTIONS({ onStartHere, onPlansChanged, onOverwhelmed, onMinimumDay, onNeedBreak })
 
   return (
     <Sheet open={open} onClose={onClose} title="What do you need?">
