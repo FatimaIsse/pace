@@ -6,6 +6,7 @@ import { DeadlineText } from '@/components/ui/DeadlineText'
 import { OverflowMenu, type OverflowMenuItem } from '@/components/ui/OverflowMenu'
 import { PriorityDot } from '@/components/ui/PriorityDot'
 import { deadlineLabel, explainTaskChoice, normalizeTaskPriority, PRIORITY_LABEL, TIME_OF_DAY_LABEL } from '@/services/planning'
+import { useTranslation } from '@/i18n/useTranslation'
 import type { DailyCapacity, Project, Task } from '@/types'
 
 export function PrimaryTaskCard({
@@ -36,20 +37,21 @@ export function PrimaryTaskCard({
   onRemove?: () => void
 }) {
   const [showWhy, setShowWhy] = useState(false)
+  const { t } = useTranslation()
 
   // No confirm box: deleting a task shows an Undo toast instead (see useTasks).
   function handleRemove() {
     onRemove?.()
   }
 
-  const menuItems: OverflowMenuItem[] = [{ label: 'Skip', icon: <SkipForward size={15} />, onClick: onSkip }]
-  if (onEdit) menuItems.push({ label: 'Edit', icon: <Pencil size={15} />, onClick: onEdit })
-  if (onMove) menuItems.push({ label: 'Move', icon: <ArrowRightLeft size={15} />, onClick: onMove })
+  const menuItems: OverflowMenuItem[] = [{ label: t('task.skip'), icon: <SkipForward size={15} />, onClick: onSkip }]
+  if (onEdit) menuItems.push({ label: t('task.edit'), icon: <Pencil size={15} />, onClick: onEdit })
+  if (onMove) menuItems.push({ label: t('task.move'), icon: <ArrowRightLeft size={15} />, onClick: onMove })
   if (onMoveToTomorrow) {
-    menuItems.push({ label: 'Move to tomorrow', icon: <CalendarPlus size={15} />, onClick: onMoveToTomorrow })
+    menuItems.push({ label: t('task.moveToTomorrow'), icon: <CalendarPlus size={15} />, onClick: onMoveToTomorrow })
   }
   if (onRemove) {
-    menuItems.push({ label: 'Delete', icon: <Trash2 size={15} />, onClick: handleRemove, variant: 'danger' })
+    menuItems.push({ label: t('task.delete'), icon: <Trash2 size={15} />, onClick: handleRemove, variant: 'danger' })
   }
 
   const deadline = deadlineLabel(task.dueDate)
@@ -93,7 +95,7 @@ export function PrimaryTaskCard({
               className="flex min-h-[44px] items-center gap-1.5 rounded-full border border-border px-3.5 text-sm font-medium text-ink-soft transition-colors duration-200 hover:border-primary-text hover:bg-sage-soft hover:text-primary-text"
             >
               <Check size={16} strokeWidth={2.5} aria-hidden />
-              Done
+              {t('task.done')}
             </button>
           )}
           <OverflowMenu items={menuItems} label={`More options for ${task.title}`} />
@@ -107,11 +109,11 @@ export function PrimaryTaskCard({
           onClick={() => setShowWhy(true)}
           className="-mt-2 self-start text-sm font-medium text-ink-faint underline-offset-2 hover:text-ink-soft hover:underline"
         >
-          Why this now?
+          {t('task.whyThisNow')}
         </button>
       )}
 
-      <Button onClick={onStart}>Start</Button>
+      <Button onClick={onStart}>{t('task.start')}</Button>
     </Card>
   )
 }

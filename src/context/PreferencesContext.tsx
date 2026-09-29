@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { getPreferences, setPreferences } from '@/firebase/firestore'
+import { RTL_LANGUAGES, type Language } from '@/i18n/translations'
 import type { DayLoad } from '@/types'
 import { useAuth } from './AuthContext'
 
@@ -17,6 +18,8 @@ interface PreferencesContextValue {
   setGentleReminders: (value: boolean) => Promise<void>
   missedNotifications: boolean
   setMissedNotifications: (value: boolean) => Promise<void>
+  language: Language
+  setLanguage: (value: Language) => Promise<void>
   planningStyle: PlanningStyle
   setPlanningStyle: (value: PlanningStyle) => Promise<void>
   dailyCapacityPref: DailyCapacityPref
@@ -41,6 +44,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [reduceMotionOverride, setReduceMotionOverrideState] = useState<boolean | null>(null)
   const [gentleReminders, setGentleRemindersState] = useState(true)
   const [missedNotifications, setMissedNotificationsState] = useState(false)
+  const [language, setLanguageState] = useState<Language>('en')
   const [planningStyle, setPlanningStyleState] = useState<PlanningStyle>('structured')
   const [dailyCapacityPref, setDailyCapacityPrefState] = useState<DailyCapacityPref>('auto')
 
@@ -58,6 +62,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       setReduceMotionOverrideState(null)
       setGentleRemindersState(true)
       setMissedNotificationsState(false)
+      setLanguageState('en')
       setPlanningStyleState('structured')
       setDailyCapacityPrefState('auto')
       return
@@ -67,6 +72,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       setReduceMotionOverrideState((prefs?.reduceMotionOverride as boolean | null) ?? null)
       setGentleRemindersState((prefs?.gentleReminders as boolean | undefined) ?? true)
       setMissedNotificationsState((prefs?.missedNotifications as boolean | undefined) ?? false)
+      setLanguageState((prefs?.language as Language | undefined) ?? 'en')
       setPlanningStyleState((prefs?.planningStyle as PlanningStyle | undefined) ?? 'structured')
       setDailyCapacityPrefState((prefs?.dailyCapacityPref as DailyCapacityPref | undefined) ?? 'auto')
     })
@@ -104,6 +110,20 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     await setPreferences(user.uid, { missedNotifications: value })
   }
 
+  const setLanguage = async (value: Language) => {
+    if (!user) return
+    setLanguageState(value)
+    await setPreferences(user.uid, { language: value })
+  }
+
+  // Keeps the document's own lang/dir in sync — dir flips the whole shell
+  // to right-to-left for Arabic (native browser behavior: text alignment
+  // and directional flex layouts follow it automatically).
+  useEffect(() => {
+    document.documentElement.lang = language
+    document.documentElement.dir = RTL_LANGUAGES.includes(language) ? 'rtl' : 'ltr'
+  }, [language])
+
   const setPlanningStyle = async (value: PlanningStyle) => {
     if (!user) return
     setPlanningStyleState(value)
@@ -131,6 +151,8 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         setGentleReminders,
         missedNotifications,
         setMissedNotifications,
+        language,
+        setLanguage,
         planningStyle,
         setPlanningStyle,
         dailyCapacityPref,

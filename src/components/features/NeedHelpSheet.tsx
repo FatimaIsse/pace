@@ -1,18 +1,22 @@
 import { Sheet } from '@/components/ui/Sheet'
+import { useTranslation } from '@/i18n/useTranslation'
+import type { TranslationKey } from '@/i18n/translations'
 
-const OPTIONS = (props: {
+const OPTION_KEYS: { id: string; labelKey: TranslationKey; handler: keyof HandlerProps }[] = [
+  { id: 'startHere', labelKey: 'needHelp.startHere', handler: 'onStartHere' },
+  { id: 'plansChanged', labelKey: 'needHelp.plansChanged', handler: 'onPlansChanged' },
+  { id: 'overwhelmed', labelKey: 'needHelp.overwhelmed', handler: 'onOverwhelmed' },
+  { id: 'minimumDay', labelKey: 'needHelp.minimumDay', handler: 'onMinimumDay' },
+  { id: 'needBreak', labelKey: 'needHelp.break', handler: 'onNeedBreak' },
+]
+
+interface HandlerProps {
   onStartHere: () => void
   onPlansChanged: () => void
   onOverwhelmed: () => void
   onMinimumDay: () => void
   onNeedBreak: () => void
-}) => [
-  { label: "I don't know where to start", onClick: props.onStartHere },
-  { label: 'My plans changed', onClick: props.onPlansChanged },
-  { label: "I'm overwhelmed", onClick: props.onOverwhelmed },
-  { label: 'I need a minimum day', onClick: props.onMinimumDay },
-  { label: 'I need a break', onClick: props.onNeedBreak },
-]
+}
 
 // Routes to the sheets/modes that already exist (StartHereSheet,
 // PlansChangedSheet, OverwhelmedMode, MinimumDaySheet, PauseModeSheet) — this
@@ -20,35 +24,26 @@ const OPTIONS = (props: {
 export function NeedHelpSheet({
   open,
   onClose,
-  onStartHere,
-  onPlansChanged,
-  onOverwhelmed,
-  onMinimumDay,
-  onNeedBreak,
+  ...handlers
 }: {
   open: boolean
   onClose: () => void
-  onStartHere: () => void
-  onPlansChanged: () => void
-  onOverwhelmed: () => void
-  onMinimumDay: () => void
-  onNeedBreak: () => void
-}) {
-  const options = OPTIONS({ onStartHere, onPlansChanged, onOverwhelmed, onMinimumDay, onNeedBreak })
+} & HandlerProps) {
+  const { t } = useTranslation()
 
   return (
-    <Sheet open={open} onClose={onClose} title="What do you need?">
+    <Sheet open={open} onClose={onClose} title={t('needHelp.title')}>
       <div className="flex flex-col gap-2">
-        {options.map((opt) => (
+        {OPTION_KEYS.map((opt) => (
           <button
-            key={opt.label}
+            key={opt.id}
             onClick={() => {
               onClose()
-              opt.onClick()
+              handlers[opt.handler]()
             }}
             className="rounded-[var(--radius-button)] border border-border px-4 py-3 text-left text-[15px] font-medium text-ink transition-colors duration-200 hover:border-primary-text hover:bg-sage-soft"
           >
-            {opt.label}
+            {t(opt.labelKey)}
           </button>
         ))}
       </div>

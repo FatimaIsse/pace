@@ -20,7 +20,8 @@ import {
   makeRealistic,
   personalizedFocus,
 } from '@/services/planning'
-import { friendlyGreeting, isToday, todayISO } from '@/utils/date'
+import { greetingPeriod, isToday, todayISO } from '@/utils/date'
+import { useTranslation } from '@/i18n/useTranslation'
 import type { SkipReason, Task } from '@/types'
 import type { InboxRouteState } from '@/components/features/InboxSheet'
 
@@ -39,6 +40,12 @@ import { StartHereSheet } from '@/components/features/StartHereSheet'
 import { QuickAddTask } from '@/components/features/QuickAddTask'
 import { NeedHelpSheet } from '@/components/features/NeedHelpSheet'
 import { MinimumDaySheet } from '@/components/features/MinimumDaySheet'
+
+const GREETING_KEY = {
+  morning: 'greeting.morning',
+  afternoon: 'greeting.afternoon',
+  evening: 'greeting.evening',
+} as const
 
 function PausedToday({ deadlines }: { deadlines: Task[] }) {
   const { resume } = usePreferences()
@@ -91,6 +98,7 @@ export function Today() {
   const { projects } = useProjects()
   const { removeInboxItem } = useBrainDump()
   const { moveToTomorrow } = useMoveToTomorrow()
+  const { t } = useTranslation()
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -154,7 +162,7 @@ export function Today() {
       <div className="mx-auto flex w-full max-w-[820px] flex-col gap-6">
         <div>
           <h1 className="text-[28px] font-bold text-ink sm:text-[32px]">
-            {friendlyGreeting()}, {firstName ?? 'there'}.
+            {firstName ? `${t(GREETING_KEY[greetingPeriod()])}, ${firstName}.` : `${t(GREETING_KEY[greetingPeriod()])}.`}
           </h1>
           <p className="mt-1 text-[15px] text-ink-soft">{focusMessage}</p>
         </div>
@@ -237,7 +245,7 @@ export function Today() {
     <div className="mx-auto flex w-full max-w-[820px] flex-col gap-8">
       <div>
         <h1 className="text-[28px] font-bold text-ink sm:text-[32px]">
-          {friendlyGreeting()}, {firstName ?? 'there'}.
+          {firstName ? `${t(GREETING_KEY[greetingPeriod()])}, ${firstName}.` : `${t(GREETING_KEY[greetingPeriod()])}.`}
         </h1>
         <p className="mt-1 text-[15px] text-ink-soft">{focusMessage}</p>
       </div>
@@ -246,7 +254,7 @@ export function Today() {
         <div className="flex items-center gap-2.5 rounded-[var(--radius-card)] border border-border bg-sage-soft px-4 py-3">
           <Heart size={16} className="shrink-0 fill-current text-primary-text" aria-hidden />
           <p className="text-[15px] text-primary-text">
-            <span className="font-semibold">Today's win:</span> {checkIn.successCondition}
+            <span className="font-semibold">{t('today.todaysWin')}</span> {checkIn.successCondition}
           </p>
         </div>
       )}
@@ -255,6 +263,7 @@ export function Today() {
         {plan.rightNow ? (
           <PrimaryTaskCard
             task={plan.rightNow}
+            eyebrow={t('today.rightNow')}
             capacity={capacity}
             allTasks={tasks}
             projects={projects}
@@ -267,19 +276,19 @@ export function Today() {
             onRemove={() => removeTask(plan.rightNow!.id)}
           />
         ) : (
-          <EmptyState title="Nothing urgent right now." subtitle="Enjoy the space." />
+          <EmptyState title={t('today.emptyTitle')} subtitle={t('today.emptySubtitle')} />
         )}
       </section>
 
       {plan.later.length > 0 && (
         <section className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-[15px] font-semibold text-ink-soft">Later</h2>
+            <h2 className="text-[15px] font-semibold text-ink-soft">{t('today.later')}</h2>
             <button
               onClick={() => setTop3Open(true)}
               className="text-sm font-medium text-ink-faint hover:text-ink-soft"
             >
-              Change my Top 3
+              {t('today.changeTop3')}
             </button>
           </div>
           <div className="flex flex-col gap-2">
@@ -301,7 +310,7 @@ export function Today() {
 
       {activeHabits.length > 0 && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-[15px] font-semibold text-ink-soft">Daily</h2>
+          <h2 className="text-[15px] font-semibold text-ink-soft">{t('today.daily')}</h2>
           {activeHabits.map((h) => (
             <HabitCard
               key={h.id}
@@ -324,7 +333,7 @@ export function Today() {
             className="flex items-center gap-2.5 self-start rounded-full border border-primary-text/25 bg-sage-soft py-2.5 pl-3.5 pr-4 text-[15px] font-semibold text-primary-text transition-colors duration-200 hover:bg-sage-soft/70"
           >
             <CheckCircle2 size={20} aria-hidden />
-            Completed today
+            {t('today.completedToday')}
             <span className="flex h-6 min-w-[24px] items-center justify-center rounded-full bg-primary-text px-1.5 text-xs font-bold text-surface">
               {completedToday.length}
             </span>
@@ -342,7 +351,7 @@ export function Today() {
 
       <div className="flex justify-center">
         <Link to="/plan" className="text-sm font-medium text-ink-faint hover:text-ink-soft">
-          See everything
+          {t('today.seeEverything')}
         </Link>
       </div>
 
@@ -351,7 +360,7 @@ export function Today() {
           onClick={() => setNeedHelpOpen(true)}
           className="text-sm font-medium text-ink-faint hover:text-ink-soft"
         >
-          Need help?
+          {t('today.needHelp')}
         </button>
       </div>
 

@@ -3,6 +3,7 @@ import { DeadlineText } from '@/components/ui/DeadlineText'
 import { OverflowMenu, type OverflowMenuItem } from '@/components/ui/OverflowMenu'
 import { PriorityDot } from '@/components/ui/PriorityDot'
 import { deadlineLabel, normalizeTaskPriority, PRIORITY_LABEL, TIME_OF_DAY_LABEL } from '@/services/planning'
+import { useTranslation } from '@/i18n/useTranslation'
 import type { Task } from '@/types'
 import { cn } from '@/utils/cn'
 
@@ -25,20 +26,22 @@ export function TaskCard({
   onRemove?: () => void
   completed?: boolean
 }) {
+  const { t } = useTranslation()
+
   // No confirm box: deleting a task shows an Undo toast instead (see useTasks).
   function handleRemove() {
     onRemove?.()
   }
 
   const menuItems: OverflowMenuItem[] = []
-  if (!completed && onSkip) menuItems.push({ label: 'Skip', icon: <SkipForward size={15} />, onClick: onSkip })
-  if (onClick) menuItems.push({ label: 'Edit', icon: <Pencil size={15} />, onClick })
-  if (onMove) menuItems.push({ label: 'Move', icon: <ArrowRightLeft size={15} />, onClick: onMove })
+  if (!completed && onSkip) menuItems.push({ label: t('task.skip'), icon: <SkipForward size={15} />, onClick: onSkip })
+  if (onClick) menuItems.push({ label: t('task.edit'), icon: <Pencil size={15} />, onClick })
+  if (onMove) menuItems.push({ label: t('task.move'), icon: <ArrowRightLeft size={15} />, onClick: onMove })
   if (onMoveToTomorrow) {
-    menuItems.push({ label: 'Move to tomorrow', icon: <CalendarPlus size={15} />, onClick: onMoveToTomorrow })
+    menuItems.push({ label: t('task.moveToTomorrow'), icon: <CalendarPlus size={15} />, onClick: onMoveToTomorrow })
   }
   if (onRemove) {
-    menuItems.push({ label: 'Delete', icon: <Trash2 size={15} />, onClick: handleRemove, variant: 'danger' })
+    menuItems.push({ label: t('task.delete'), icon: <Trash2 size={15} />, onClick: handleRemove, variant: 'danger' })
   }
 
   const deadline = deadlineLabel(task.dueDate)
@@ -105,7 +108,7 @@ export function TaskCard({
             className="flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-full border border-border px-3.5 text-sm font-medium text-ink-soft transition-colors duration-200 hover:border-primary-text hover:bg-sage-soft hover:text-primary-text"
           >
             <Check size={16} strokeWidth={2.5} aria-hidden />
-            Done
+            {t('task.done')}
           </button>
         )}
         {menuItems.length > 0 && <OverflowMenu items={menuItems} label={`More options for ${task.title}`} />}

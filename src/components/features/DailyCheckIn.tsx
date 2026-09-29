@@ -1,19 +1,21 @@
 import { useState } from 'react'
 import type { DayLoad, EnergyLevel } from '@/types'
+import type { TranslationKey } from '@/i18n/translations'
+import { useTranslation } from '@/i18n/useTranslation'
 import { cn } from '@/utils/cn'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 
-const ENERGY_OPTIONS: { value: EnergyLevel; label: string }[] = [
-  { value: 'low', label: 'Low' },
-  { value: 'okay', label: 'Okay' },
-  { value: 'good', label: 'Good' },
+const ENERGY_OPTIONS: { value: EnergyLevel; labelKey: TranslationKey }[] = [
+  { value: 'low', labelKey: 'checkin.energyLow' },
+  { value: 'okay', labelKey: 'checkin.energyOkay' },
+  { value: 'good', labelKey: 'checkin.energyGood' },
 ]
 
-const LOAD_OPTIONS: { value: DayLoad; label: string }[] = [
-  { value: 'light', label: 'Light' },
-  { value: 'normal', label: 'Normal' },
-  { value: 'packed', label: 'Packed' },
+const LOAD_OPTIONS: { value: DayLoad; labelKey: TranslationKey }[] = [
+  { value: 'light', labelKey: 'checkin.loadLight' },
+  { value: 'normal', labelKey: 'checkin.loadNormal' },
+  { value: 'packed', labelKey: 'checkin.loadPacked' },
 ]
 
 export function DailyCheckIn({
@@ -21,6 +23,7 @@ export function DailyCheckIn({
 }: {
   onSubmit: (energy: EnergyLevel, dayLoad: DayLoad, successCondition?: string) => void
 }) {
+  const { t } = useTranslation()
   const [energy, setEnergy] = useState<EnergyLevel | null>(null)
   const [dayLoad, setDayLoad] = useState<DayLoad | null>(null)
   const [successCondition, setSuccessCondition] = useState('')
@@ -30,7 +33,7 @@ export function DailyCheckIn({
   return (
     <div className="animate-card-in rounded-[var(--radius-card)] border border-border bg-surface p-5 sm:p-6">
       <fieldset className="mb-5">
-        <legend className="mb-2.5 text-sm font-semibold text-ink">How's your energy?</legend>
+        <legend className="mb-2.5 text-sm font-semibold text-ink">{t('checkin.energyQuestion')}</legend>
         <div className="flex gap-2">
           {ENERGY_OPTIONS.map((opt) => (
             <button
@@ -43,14 +46,14 @@ export function DailyCheckIn({
                 energy === opt.value && 'border-primary-text bg-sage-soft text-primary-text',
               )}
             >
-              {opt.label}
+              {t(opt.labelKey)}
             </button>
           ))}
         </div>
       </fieldset>
 
       <fieldset className="mb-5">
-        <legend className="mb-2.5 text-sm font-semibold text-ink">What kind of day is this?</legend>
+        <legend className="mb-2.5 text-sm font-semibold text-ink">{t('checkin.loadQuestion')}</legend>
         <div className="flex gap-2">
           {LOAD_OPTIONS.map((opt) => (
             <button
@@ -63,7 +66,7 @@ export function DailyCheckIn({
                 dayLoad === opt.value && 'border-primary-text bg-sage-soft text-primary-text',
               )}
             >
-              {opt.label}
+              {t(opt.labelKey)}
             </button>
           ))}
         </div>
@@ -71,9 +74,9 @@ export function DailyCheckIn({
 
       <div className="mb-5">
         <Input
-          label="What would make today feel successful? (optional)"
+          label={t('checkin.successQuestion')}
           voiceInput
-          placeholder="One thing — the rest is a bonus."
+          placeholder={t('checkin.successPlaceholder')}
           value={successCondition}
           onChange={(e) => setSuccessCondition(e.target.value)}
         />
@@ -84,7 +87,7 @@ export function DailyCheckIn({
         disabled={!canSubmit}
         onClick={() => energy && dayLoad && onSubmit(energy, dayLoad, successCondition)}
       >
-        Continue
+        {t('checkin.continue')}
       </Button>
     </div>
   )

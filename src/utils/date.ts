@@ -16,11 +16,15 @@ export function isToday(iso: string): boolean {
   return isDateToday(parseISO(iso))
 }
 
-export function friendlyGreeting(): string {
+export type GreetingPeriod = 'morning' | 'afternoon' | 'evening'
+
+// Returns a period, not the text itself — translated at the call site so
+// this stays language-agnostic.
+export function greetingPeriod(): GreetingPeriod {
   const hour = new Date().getHours()
-  if (hour < 12) return 'Good morning'
-  if (hour < 18) return 'Good afternoon'
-  return 'Good evening'
+  if (hour < 12) return 'morning'
+  if (hour < 18) return 'afternoon'
+  return 'evening'
 }
 
 export function formatMonthLabel(monthKey: string): string {

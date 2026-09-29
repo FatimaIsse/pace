@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import { NAV_ITEMS } from './nav-items'
 import { useUI } from '@/context/UIContext'
+import { useTranslation } from '@/i18n/useTranslation'
 import { cn } from '@/utils/cn'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { MoodSoundPicker } from '@/components/ui/MoodSoundPicker'
@@ -9,6 +10,7 @@ import logo from '@/assets/logo.png'
 
 export function Sidebar() {
   const { openSmartAdd } = useUI()
+  const { t } = useTranslation()
 
   return (
     <aside className="sticky top-0 hidden h-svh w-[220px] shrink-0 flex-col border-r border-border bg-surface px-4 py-8 md:flex">
@@ -24,7 +26,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex flex-col gap-1">
-        {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
+        {NAV_ITEMS.map(({ to, labelKey, icon: Icon, end }) => (
           <NavLink
             key={to}
             to={to}
@@ -37,7 +39,7 @@ export function Sidebar() {
             }
           >
             <Icon size={20} strokeWidth={2} />
-            {label}
+            {t(labelKey)}
           </NavLink>
         ))}
       </nav>
@@ -47,7 +49,7 @@ export function Sidebar() {
         className="mt-auto flex items-center gap-3 rounded-[var(--radius-button)] border border-border px-3 py-2.5 text-[15px] font-medium text-ink-soft transition-colors duration-200 hover:bg-soft hover:text-ink"
       >
         <Plus size={20} strokeWidth={2} />
-        Add
+        {t('nav.add')}
       </button>
     </aside>
   )

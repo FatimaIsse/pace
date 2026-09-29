@@ -4,6 +4,8 @@ import { ArrowLeft } from 'lucide-react'
 import { usePreferences, type DailyCapacityPref, type PlanningStyle } from '@/context/PreferencesContext'
 import { useTheme } from '@/context/ThemeContext'
 import { useFeedback } from '@/context/FeedbackContext'
+import { useTranslation } from '@/i18n/useTranslation'
+import { LANGUAGES, LANGUAGE_LABEL } from '@/i18n/translations'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Toggle } from '@/components/ui/Toggle'
@@ -32,6 +34,8 @@ export function MePreferences() {
     setGentleReminders,
     missedNotifications,
     setMissedNotifications,
+    language,
+    setLanguage,
     planningStyle,
     setPlanningStyle,
     dailyCapacityPref,
@@ -39,6 +43,7 @@ export function MePreferences() {
   } = usePreferences()
   const { theme, toggleTheme } = useTheme()
   const { toast } = useFeedback()
+  const { t } = useTranslation()
   const [pauseOpen, setPauseOpen] = useState(false)
   const notificationsSupported = typeof window !== 'undefined' && 'Notification' in window
 
@@ -74,7 +79,26 @@ export function MePreferences() {
       <h1 className="text-[28px] font-bold text-ink sm:text-[32px]">Preferences</h1>
 
       <Card className="flex flex-col">
-        <div className="flex min-h-[48px] items-center justify-between gap-4 py-1.5">
+        <div className="py-1.5">
+          <p className="text-[15px] font-medium text-ink">{t('prefs.language')}</p>
+          <p className="text-sm text-ink-faint">{t('prefs.languageHint')}</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {LANGUAGES.map((lang) => (
+              <button
+                key={lang}
+                onClick={() => setLanguage(lang)}
+                className={cn(
+                  'rounded-[var(--radius-button)] border border-border px-3.5 py-2 text-sm font-medium text-ink-soft transition-colors duration-200',
+                  language === lang && 'border-primary-text bg-sage-soft text-primary-text',
+                )}
+              >
+                {LANGUAGE_LABEL[lang]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex min-h-[48px] items-center justify-between gap-4 border-t border-border py-3">
           <div>
             <p className="text-[15px] font-medium text-ink">Reduce motion</p>
             <p className="text-sm text-ink-faint">Turn off animations throughout Pace.</p>
