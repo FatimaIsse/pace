@@ -24,10 +24,11 @@ export function Sidebar() {
       </div>
 
       <nav className="flex flex-col gap-1">
-        {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
+        {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}
             to={to}
+            end={end}
             className={({ isActive }) =>
               cn(
                 'flex items-center gap-3 rounded-[var(--radius-button)] px-3 py-2.5 text-[15px] font-medium text-ink-soft transition-colors duration-200 hover:bg-soft hover:text-ink',

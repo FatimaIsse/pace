@@ -6,17 +6,36 @@ import { Button } from '@/components/ui/Button'
 import { useTasks } from '@/hooks/useTasks'
 import { useProjects } from '@/hooks/useProjects'
 import { useGoals } from '@/hooks/useGoals'
+import { usePreferences } from '@/context/PreferencesContext'
 import { suggestScheduleDate } from '@/services/planning'
 import { findMissed, KIND_LABEL, missedLabel, type MissedItem } from '@/services/deadlines'
 import { todayISO } from '@/utils/date'
+import logo from '@/assets/logo.png'
 
 const DISMISS_KEY = 'pace-missed-banner-dismissed'
+const NOTIFIED_KEY = 'pace-missed-notified-ids'
 
 function readDismissed(): string | null {
   try {
     return localStorage.getItem(DISMISS_KEY)
   } catch {
     return null
+  }
+}
+
+function readNotifiedIds(): Set<string> {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(NOTIFIED_KEY) ?? '[]'))
+  } catch {
+    return new Set()
+  }
+}
+
+function writeNotifiedIds(ids: Set<string>) {
+  try {
+    localStorage.setItem(NOTIFIED_KEY, JSON.stringify([...ids]))
+  } catch {
+    // best-effort
   }
 }
 
@@ -27,6 +46,7 @@ export function OverdueBanner() {
   const { tasks, updateTask, completeTask, archiveTask } = useTasks()
   const { projects, updateProject } = useProjects()
   const { goals, updateGoal } = useGoals()
+  const { missedNotifications } = usePreferences()
   const [sheetOpen, setSheetOpen] = useState(false)
   const [dismissed, setDismissed] = useState<string | null>(readDismissed)
   const [today, setToday] = useState(todayISO)
@@ -47,6 +67,33 @@ export function OverdueBanner() {
   const missed = useMemo(() => findMissed(tasks, projects, goals, today), [tasks, projects, goals, today])
   const signature = `${today}|${missed.map((m) => `${m.kind}:${m.id}`).join(',')}`
   const visible = missed.length > 0 && dismissed !== signature
+
+  // Fires a real browser notification for each newly-missed item — only
+  // once ever per item (tracked by id, not by day), and only while Pace is
+  // actually open, since there's no push server behind this. Opt-in via
+  // Preferences, and silently does nothing if permission isn't granted.
+  useEffect(() => {
+    if (!missedNotifications) return
+    if (typeof window === 'undefined' || !('Notification' in window)) return
+    if (Notification.permission !== 'granted') return
+
+    // Keyed by due date, not just id — if a missed item gets rescheduled and
+    // later misses its new date too, that's a fresh occurrence worth a
+    // fresh notification, not a repeat of the same one.
+    const notified = readNotifiedIds()
+    const fresh = missed.filter((m) => !notified.has(`${m.kind}:${m.id}:${m.dueDate}`))
+    if (fresh.length === 0) return
+
+    for (const item of fresh) {
+      new Notification(`Missed: ${item.title}`, {
+        body: `${KIND_LABEL[item.kind]} · ${missedLabel(item.daysLate)}`,
+        icon: logo,
+        tag: `${item.kind}:${item.id}:${item.dueDate}`,
+      })
+      notified.add(`${item.kind}:${item.id}:${item.dueDate}`)
+    }
+    writeNotifiedIds(notified)
+  }, [missed, missedNotifications])
 
   // Mirror the count in the browser tab so it's noticed even when the app
   // isn't the focused window.

@@ -15,6 +15,8 @@ interface PreferencesContextValue {
   setReduceMotionOverride: (value: boolean | null) => Promise<void>
   gentleReminders: boolean
   setGentleReminders: (value: boolean) => Promise<void>
+  missedNotifications: boolean
+  setMissedNotifications: (value: boolean) => Promise<void>
   planningStyle: PlanningStyle
   setPlanningStyle: (value: PlanningStyle) => Promise<void>
   dailyCapacityPref: DailyCapacityPref
@@ -38,6 +40,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [systemReduceMotion, setSystemReduceMotion] = useState(false)
   const [reduceMotionOverride, setReduceMotionOverrideState] = useState<boolean | null>(null)
   const [gentleReminders, setGentleRemindersState] = useState(true)
+  const [missedNotifications, setMissedNotificationsState] = useState(false)
   const [planningStyle, setPlanningStyleState] = useState<PlanningStyle>('structured')
   const [dailyCapacityPref, setDailyCapacityPrefState] = useState<DailyCapacityPref>('auto')
 
@@ -54,6 +57,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       setPausedUntil(null)
       setReduceMotionOverrideState(null)
       setGentleRemindersState(true)
+      setMissedNotificationsState(false)
       setPlanningStyleState('structured')
       setDailyCapacityPrefState('auto')
       return
@@ -62,6 +66,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       setPausedUntil((prefs?.pausedUntil as string | null) ?? null)
       setReduceMotionOverrideState((prefs?.reduceMotionOverride as boolean | null) ?? null)
       setGentleRemindersState((prefs?.gentleReminders as boolean | undefined) ?? true)
+      setMissedNotificationsState((prefs?.missedNotifications as boolean | undefined) ?? false)
       setPlanningStyleState((prefs?.planningStyle as PlanningStyle | undefined) ?? 'structured')
       setDailyCapacityPrefState((prefs?.dailyCapacityPref as DailyCapacityPref | undefined) ?? 'auto')
     })
@@ -93,6 +98,12 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     await setPreferences(user.uid, { gentleReminders: value })
   }
 
+  const setMissedNotifications = async (value: boolean) => {
+    if (!user) return
+    setMissedNotificationsState(value)
+    await setPreferences(user.uid, { missedNotifications: value })
+  }
+
   const setPlanningStyle = async (value: PlanningStyle) => {
     if (!user) return
     setPlanningStyleState(value)
@@ -118,6 +129,8 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         setReduceMotionOverride,
         gentleReminders,
         setGentleReminders,
+        missedNotifications,
+        setMissedNotifications,
         planningStyle,
         setPlanningStyle,
         dailyCapacityPref,

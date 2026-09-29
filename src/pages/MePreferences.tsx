@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { usePreferences, type DailyCapacityPref, type PlanningStyle } from '@/context/PreferencesContext'
 import { useTheme } from '@/context/ThemeContext'
+import { useFeedback } from '@/context/FeedbackContext'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Toggle } from '@/components/ui/Toggle'
@@ -29,13 +30,37 @@ export function MePreferences() {
     setReduceMotionOverride,
     gentleReminders,
     setGentleReminders,
+    missedNotifications,
+    setMissedNotifications,
     planningStyle,
     setPlanningStyle,
     dailyCapacityPref,
     setDailyCapacityPref,
   } = usePreferences()
   const { theme, toggleTheme } = useTheme()
+  const { toast } = useFeedback()
   const [pauseOpen, setPauseOpen] = useState(false)
+  const notificationsSupported = typeof window !== 'undefined' && 'Notification' in window
+
+  // Browser notifications need explicit permission — only asked for at the
+  // moment someone actually turns this on, never on page load.
+  async function handleMissedNotificationsToggle(value: boolean) {
+    if (!value) {
+      await setMissedNotifications(false)
+      return
+    }
+    if (!notificationsSupported) {
+      toast({ message: "This browser doesn't support notifications." })
+      return
+    }
+    const permission = await Notification.requestPermission()
+    if (permission === 'granted') {
+      await setMissedNotifications(true)
+      toast({ message: "You'll be notified here when something's missed." })
+    } else {
+      toast({ message: 'Notifications are blocked — allow them in your browser settings to turn this on.' })
+    }
+  }
 
   return (
     <div className="mx-auto flex w-full max-w-[700px] flex-col gap-6">
@@ -67,6 +92,20 @@ export function MePreferences() {
             <p className="text-sm text-ink-faint">Let Pace gently point out a heavy day or a long gap away.</p>
           </div>
           <Toggle checked={gentleReminders} onChange={setGentleReminders} label="Gentle reminders" />
+        </div>
+
+        <div className="flex min-h-[48px] items-center justify-between gap-4 border-t border-border py-3">
+          <div>
+            <p className="text-[15px] font-medium text-ink">Missed notifications</p>
+            <p className="text-sm text-ink-faint">
+              A browser notification whenever a due date passes, while Pace is open.
+            </p>
+          </div>
+          <Toggle
+            checked={missedNotifications}
+            onChange={handleMissedNotificationsToggle}
+            label="Missed notifications"
+          />
         </div>
 
         <div className="border-t border-border py-3">

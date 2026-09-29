@@ -18,10 +18,11 @@ export function MobileNavigation() {
       </button>
 
       <nav className="fixed inset-x-0 bottom-0 z-20 flex border-t border-border bg-surface px-2 pb-[env(safe-area-inset-bottom)] md:hidden">
-        {NAV_ITEMS.filter((item) => !item.desktopOnly).map(({ to, label, icon: Icon }) => (
+        {NAV_ITEMS.filter((item) => !item.desktopOnly).map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}
             to={to}
+            end={end}
             className={({ isActive }) =>
               cn(
                 'flex min-h-[60px] flex-1 flex-col items-center justify-center gap-0.5 py-1.5 text-xs font-medium text-ink-soft',
